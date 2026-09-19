@@ -1,0 +1,204 @@
+{
+  "generated_at": "2026-09-18 02:24:10",
+  "config_source": "/home/claude/quan-compliance/configs/golden",
+  "n_rules": 9,
+  "overall_score": 75.4,
+  "devices": [
+    {
+      "device": "leaf1",
+      "os": "srlinux",
+      "role": "leaf",
+      "score": 46.2,
+      "earned": 12,
+      "total": 26,
+      "n_rules": 8,
+      "n_violations": 4,
+      "results": [
+        {
+          "id": "CIS-1.1",
+          "title": "Cấm dịch vụ Telnet (chỉ dùng SSH)",
+          "severity": "high",
+          "passed": false,
+          "remediation": "Xóa mọi cấu hình telnet server; chỉ bật SSHv2.",
+          "clo": [
+            "CLO2"
+          ]
+        },
+        {
+          "id": "CIS-1.2",
+          "title": "Bắt buộc SSH phiên bản 2",
+          "severity": "high",
+          "passed": true,
+          "remediation": "Bật dịch vụ SSH và ép dùng SSHv2.",
+          "clo": [
+            "CLO2"
+          ]
+        },
+        {
+          "id": "CIS-2.1",
+          "title": "Không dùng SNMP community mặc định (public/private)",
+          "severity": "high",
+          "passed": false,
+          "remediation": "Xóa community public/private; chuyển sang SNMPv3.",
+          "clo": [
+            "CLO2"
+          ]
+        },
+        {
+          "id": "CIS-2.2",
+          "title": "Bật SNMPv3 (xác thực + mã hóa)",
+          "severity": "medium",
+          "passed": false,
+          "remediation": "Cấu hình user SNMPv3 với auth-priv (SHA/AES).",
+          "clo": [
+            "CLO2"
+          ]
+        },
+        {
+          "id": "CIS-3.1",
+          "title": "Có banner cảnh báo truy cập (login banner)",
+          "severity": "low",
+          "passed": false,
+          "remediation": "Thêm banner cảnh báo truy cập trái phép.",
+          "clo": [
+            "CLO2"
+          ]
+        },
+        {
+          "id": "CIS-4.1",
+          "title": "Bật ghi nhật ký ra máy chủ syslog",
+          "severity": "medium",
+          "passed": true,
+          "remediation": "Cấu hình gửi log về máy chủ syslog tập trung.",
+          "clo": [
+            "CLO2",
+            "CLO3"
+          ]
+        },
+        {
+          "id": "CIS-4.2",
+          "title": "Đồng bộ thời gian bằng NTP",
+          "severity": "low",
+          "passed": true,
+          "remediation": "Cấu hình ít nhất một máy chủ NTP tin cậy.",
+          "clo": [
+            "CLO2"
+          ]
+        },
+        {
+          "id": "CIS-6.1",
+          "title": "Giới hạn truy cập quản trị bằng ACL",
+          "severity": "medium",
+          "passed": true,
+          "remediation": "Chỉ cho phép dải quản trị 172.20.20.0/24 truy cập.",
+          "clo": [
+            "CLO2"
+          ]
+        }
+      ]
+    },
+    {
+      "device": "core1",
+      "os": "frr",
+      "role": "core",
+      "score": 100.0,
+      "earned": 31,
+      "total": 31,
+      "n_rules": 9,
+      "n_violations": 0,
+      "results": [
+        {
+          "id": "CIS-1.1",
+          "title": "Cấm dịch vụ Telnet (chỉ dùng SSH)",
+          "severity": "high",
+          "passed": true,
+          "remediation": "Xóa mọi cấu hình telnet server; chỉ bật SSHv2.",
+          "clo": [
+            "CLO2"
+          ]
+        },
+        {
+          "id": "CIS-1.2",
+          "title": "Bắt buộc SSH phiên bản 2",
+          "severity": "high",
+          "passed": true,
+          "remediation": "Bật dịch vụ SSH và ép dùng SSHv2.",
+          "clo": [
+            "CLO2"
+          ]
+        },
+        {
+          "id": "CIS-2.1",
+          "title": "Không dùng SNMP community mặc định (public/private)",
+          "severity": "high",
+          "passed": true,
+          "remediation": "Xóa community public/private; chuyển sang SNMPv3.",
+          "clo": [
+            "CLO2"
+          ]
+        },
+        {
+          "id": "CIS-2.2",
+          "title": "Bật SNMPv3 (xác thực + mã hóa)",
+          "severity": "medium",
+          "passed": true,
+          "remediation": "Cấu hình user SNMPv3 với auth-priv (SHA/AES).",
+          "clo": [
+            "CLO2"
+          ]
+        },
+        {
+          "id": "CIS-3.1",
+          "title": "Có banner cảnh báo truy cập (login banner)",
+          "severity": "low",
+          "passed": true,
+          "remediation": "Thêm banner cảnh báo truy cập trái phép.",
+          "clo": [
+            "CLO2"
+          ]
+        },
+        {
+          "id": "CIS-4.1",
+          "title": "Bật ghi nhật ký ra máy chủ syslog",
+          "severity": "medium",
+          "passed": true,
+          "remediation": "Cấu hình gửi log về máy chủ syslog tập trung.",
+          "clo": [
+            "CLO2",
+            "CLO3"
+          ]
+        },
+        {
+          "id": "CIS-4.2",
+          "title": "Đồng bộ thời gian bằng NTP",
+          "severity": "low",
+          "passed": true,
+          "remediation": "Cấu hình ít nhất một máy chủ NTP tin cậy.",
+          "clo": [
+            "CLO2"
+          ]
+        },
+        {
+          "id": "CIS-5.1",
+          "title": "Xác thực định tuyến (BGP/OSPF không để trống mật khẩu)",
+          "severity": "high",
+          "passed": true,
+          "remediation": "Bật xác thực cho phiên định tuyến (MD5/keychain).",
+          "clo": [
+            "CLO2"
+          ]
+        },
+        {
+          "id": "CIS-6.1",
+          "title": "Giới hạn truy cập quản trị bằng ACL",
+          "severity": "medium",
+          "passed": true,
+          "remediation": "Chỉ cho phép dải quản trị 172.20.20.0/24 truy cập.",
+          "clo": [
+            "CLO2"
+          ]
+        }
+      ]
+    }
+  ]
+}

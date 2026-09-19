@@ -1,0 +1,9 @@
+# Python deps cho toàn đồ án. Cài: pip install -r requirements.txt
+ansible-core>=2.16
+PyYAML>=6.0
+Jinja2>=3.1
+netmiko>=4.3
+napalm>=5.0
+pandas>=2.0
+# Kiểm chứng tiền triển khai (phần mở rộng của Quân)
+pybatfish>=2023.5

@@ -1,0 +1,49 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Báo cáo tuân thủ an ninh mạng</title>
+<style>
+  :root{--bg:#f8fafc;--fg:#0f172a;--muted:#64748b;--line:#e2e8f0;--card:#fff;}
+  @media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0f172a;--fg:#e2e8f0;--muted:#94a3b8;--line:#1e293b;--card:#1e293b;}}
+  body{font-family:system-ui,Segoe UI,Roboto,sans-serif;margin:0;background:var(--bg);color:var(--fg);}
+  .wrap{max-width:960px;margin:0 auto;padding:24px 16px;}
+  h1{font-size:22px;margin:0 0 4px;}
+  .overall{font-size:40px;font-weight:800;color:#d97706;}
+  .muted{color:var(--muted);} .small{font-size:13px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin:16px 0;}
+  .card-h{display:flex;justify-content:space-between;align-items:center;}
+  .score{font-size:28px;font-weight:800;}
+  table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px;}
+  th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top;}
+  th{color:var(--muted);font-weight:600;}
+  .ok{color:#16a34a;font-weight:700;} .bad{color:#dc2626;font-weight:700;}
+  .r-bad{background:rgba(220,38,38,.06);}
+  .rem{color:var(--muted);font-size:12.5px;margin-top:2px;}
+</style></head><body><div class="wrap">
+  <h1>Báo cáo kiểm soát tuân thủ an ninh mạng</h1>
+  <div class="muted small">Sinh lúc 2026-09-18 02:24:10 · Bộ luật: 9 · Thiết bị: 2</div>
+  <div style="margin:14px 0;">Điểm tuân thủ toàn hệ thống: <span class="overall">75.4%</span></div>
+  
+        <div class="card">
+          <div class="card-h">
+            <div><b>leaf1</b> <span class="muted">srlinux · leaf</span></div>
+            <div class="score" style="color:#dc2626">46.2%</div>
+          </div>
+          <div class="muted small">4/8 luật đạt · 4 vi phạm</div>
+          <table>
+            <thead><tr><th>Mã</th><th>Yêu cầu</th><th>Mức</th><th>CLO</th><th>Trạng thái</th></tr></thead>
+            <tbody><tr class='r-bad'><td>CIS-1.1</td><td>Cấm dịch vụ Telnet (chỉ dùng SSH)<div class='rem'>Khắc phục: Xóa mọi cấu hình telnet server; chỉ bật SSHv2.</div></td><td>high</td><td>CLO2</td><td><span class='bad'>VI PHẠM</span></td></tr><tr class='r-ok'><td>CIS-1.2</td><td>Bắt buộc SSH phiên bản 2</td><td>high</td><td>CLO2</td><td><span class='ok'>ĐẠT</span></td></tr><tr class='r-bad'><td>CIS-2.1</td><td>Không dùng SNMP community mặc định (public/private)<div class='rem'>Khắc phục: Xóa community public/private; chuyển sang SNMPv3.</div></td><td>high</td><td>CLO2</td><td><span class='bad'>VI PHẠM</span></td></tr><tr class='r-bad'><td>CIS-2.2</td><td>Bật SNMPv3 (xác thực + mã hóa)<div class='rem'>Khắc phục: Cấu hình user SNMPv3 với auth-priv (SHA/AES).</div></td><td>medium</td><td>CLO2</td><td><span class='bad'>VI PHẠM</span></td></tr><tr class='r-bad'><td>CIS-3.1</td><td>Có banner cảnh báo truy cập (login banner)<div class='rem'>Khắc phục: Thêm banner cảnh báo truy cập trái phép.</div></td><td>low</td><td>CLO2</td><td><span class='bad'>VI PHẠM</span></td></tr><tr class='r-ok'><td>CIS-4.1</td><td>Bật ghi nhật ký ra máy chủ syslog</td><td>medium</td><td>CLO2, CLO3</td><td><span class='ok'>ĐẠT</span></td></tr><tr class='r-ok'><td>CIS-4.2</td><td>Đồng bộ thời gian bằng NTP</td><td>low</td><td>CLO2</td><td><span class='ok'>ĐẠT</span></td></tr><tr class='r-ok'><td>CIS-6.1</td><td>Giới hạn truy cập quản trị bằng ACL</td><td>medium</td><td>CLO2</td><td><span class='ok'>ĐẠT</span></td></tr></tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-h">
+            <div><b>core1</b> <span class="muted">frr · core</span></div>
+            <div class="score" style="color:#16a34a">100.0%</div>
+          </div>
+          <div class="muted small">9/9 luật đạt · 0 vi phạm</div>
+          <table>
+            <thead><tr><th>Mã</th><th>Yêu cầu</th><th>Mức</th><th>CLO</th><th>Trạng thái</th></tr></thead>
+            <tbody><tr class='r-ok'><td>CIS-1.1</td><td>Cấm dịch vụ Telnet (chỉ dùng SSH)</td><td>high</td><td>CLO2</td><td><span class='ok'>ĐẠT</span></td></tr><tr class='r-ok'><td>CIS-1.2</td><td>Bắt buộc SSH phiên bản 2</td><td>high</td><td>CLO2</td><td><span class='ok'>ĐẠT</span></td></tr><tr class='r-ok'><td>CIS-2.1</td><td>Không dùng SNMP community mặc định (public/private)</td><td>high</td><td>CLO2</td><td><span class='ok'>ĐẠT</span></td></tr><tr class='r-ok'><td>CIS-2.2</td><td>Bật SNMPv3 (xác thực + mã hóa)</td><td>medium</td><td>CLO2</td><td><span class='ok'>ĐẠT</span></td></tr><tr class='r-ok'><td>CIS-3.1</td><td>Có banner cảnh báo truy cập (login banner)</td><td>low</td><td>CLO2</td><td><span class='ok'>ĐẠT</span></td></tr><tr class='r-ok'><td>CIS-4.1</td><td>Bật ghi nhật ký ra máy chủ syslog</td><td>medium</td><td>CLO2, CLO3</td><td><span class='ok'>ĐẠT</span></td></tr><tr class='r-ok'><td>CIS-4.2</td><td>Đồng bộ thời gian bằng NTP</td><td>low</td><td>CLO2</td><td><span class='ok'>ĐẠT</span></td></tr><tr class='r-ok'><td>CIS-5.1</td><td>Xác thực định tuyến (BGP/OSPF không để trống mật khẩu)</td><td>high</td><td>CLO2</td><td><span class='ok'>ĐẠT</span></td></tr><tr class='r-ok'><td>CIS-6.1</td><td>Giới hạn truy cập quản trị bằng ACL</td><td>medium</td><td>CLO2</td><td><span class='ok'>ĐẠT</span></td></tr></tbody>
+          </table>
+        </div>
+  <p class="muted small">Sinh tự động bởi tools/score.py — Đồ án tự động hóa cấu hình & an ninh mạng.</p>
+</div></body></html>

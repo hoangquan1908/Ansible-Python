@@ -1,0 +1,10 @@
+---
+# Chung — triển khai cấu hình từ SoT xuống thiết bị
+- name: Trien khai cau hinh nen tang
+  hosts: all
+  gather_facts: false
+  roles:
+    - base_config
+    - vlan_port
+    - routing
+    - backup_restore

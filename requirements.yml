@@ -1,0 +1,8 @@
+---
+# Ansible collections dùng cho đồ án.
+# Cài: ansible-galaxy collection install -r requirements.yml
+collections:
+  - name: ansible.netcommon
+  - name: nokia.srlinux
+  # FRR cấu hình qua file/vtysh nên KHÔNG cần collection frrouting.frr
+  #  (collection này đang lỗi metadata, đã bỏ chủ đích).

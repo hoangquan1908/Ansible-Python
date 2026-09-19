@@ -1,0 +1,14 @@
+---
+# Role base_config (Chung) — KB-01: cấu hình nền tảng
+# Hostname, người dùng, NTP, syslog, banner. Cấu hình sinh từ Jinja2.
+#
+# TODO(Chung): thay các debug bên dưới bằng module cấu hình thật
+# (nokia.srlinux.config cho SR Linux; template + vtysh cho FRR).
+
+- name: "[base] Sinh cấu hình nền tảng từ khuôn mẫu Jinja2"
+  ansible.builtin.debug:
+    msg: "Sẽ render templates/base_{{ ansible_network_os | default('frr') }}.j2 cho {{ inventory_hostname }}"
+
+- name: "[base] Áp dụng NTP {{ ntp_servers }} và syslog {{ syslog_servers }}"
+  ansible.builtin.debug:
+    msg: "TODO: đẩy NTP/syslog/banner vào thiết bị (idempotent)"

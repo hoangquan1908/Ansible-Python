@@ -1,0 +1,114 @@
+# =====================================================================
+# CHÍNH SÁCH TUÂN THỦ DẠNG MÃ (Compliance-as-Code)
+# ---------------------------------------------------------------------
+# Mỗi luật = một yêu cầu an ninh (dựa trên CIS Benchmark) được biểu diễn
+# thành phép kiểm chứng tự động. Đây là "hợp đồng dữ liệu" số 2.
+#
+# Kiểu kiểm tra (check.type):
+#   must_contain     : cấu hình BẮT BUỘC khớp regex (có -> đạt)
+#   must_not_contain : cấu hình KHÔNG ĐƯỢC khớp regex (không có -> đạt)
+#
+# Trường:
+#   id          : mã luật (tham chiếu CIS)
+#   title       : mô tả ngắn
+#   severity    : high | medium | low  (dùng để tính điểm có trọng số)
+#   applies_to  : all | srlinux | frr   (lọc theo os của thiết bị)
+#   remediation : cách khắc phục (đưa vào báo cáo cho người vận hành)
+#   clo         : ánh xạ chuẩn đầu ra học phần (phục vụ chấm ĐATN)
+# =====================================================================
+
+weights:            # trọng số theo mức nghiêm trọng khi tính điểm
+  high: 5
+  medium: 3
+  low: 1
+
+rules:
+  - id: CIS-1.1
+    title: "Cấm dịch vụ Telnet (chỉ dùng SSH)"
+    severity: high
+    applies_to: all
+    check:
+      type: must_not_contain
+      pattern: '(?im)^\s*(telnet\s+server|service\s+telnet|transport\s+input\s+telnet)'
+    remediation: "Xóa mọi cấu hình telnet server; chỉ bật SSHv2."
+    clo: [CLO2]
+
+  - id: CIS-1.2
+    title: "Bắt buộc SSH phiên bản 2"
+    severity: high
+    applies_to: all
+    check:
+      type: must_contain
+      pattern: '(?im)^\s*(ssh\s+server|admin-state\s+enable.*ssh|ssh version 2|transport input ssh)'
+    remediation: "Bật dịch vụ SSH và ép dùng SSHv2."
+    clo: [CLO2]
+
+  - id: CIS-2.1
+    title: "Không dùng SNMP community mặc định (public/private)"
+    severity: high
+    applies_to: all
+    check:
+      type: must_not_contain
+      pattern: '(?im)community\s+(public|private)\b'
+    remediation: "Xóa community public/private; chuyển sang SNMPv3."
+    clo: [CLO2]
+
+  - id: CIS-2.2
+    title: "Bật SNMPv3 (xác thực + mã hóa)"
+    severity: medium
+    applies_to: all
+    check:
+      type: must_contain
+      pattern: '(?im)(snmp.*v3|usm.*auth.*priv|security-level\s+auth-priv)'
+    remediation: "Cấu hình user SNMPv3 với auth-priv (SHA/AES)."
+    clo: [CLO2]
+
+  - id: CIS-3.1
+    title: "Có banner cảnh báo truy cập (login banner)"
+    severity: low
+    applies_to: all
+    check:
+      type: must_contain
+      pattern: '(?im)(banner|login-banner|message-of-the-day|motd)'
+    remediation: "Thêm banner cảnh báo truy cập trái phép."
+    clo: [CLO2]
+
+  - id: CIS-4.1
+    title: "Bật ghi nhật ký ra máy chủ syslog"
+    severity: medium
+    applies_to: all
+    check:
+      type: must_contain
+      pattern: '(?im)(logging|log.*server|remote-server|syslog)'
+    remediation: "Cấu hình gửi log về máy chủ syslog tập trung."
+    clo: [CLO2, CLO3]
+
+  - id: CIS-4.2
+    title: "Đồng bộ thời gian bằng NTP"
+    severity: low
+    applies_to: all
+    check:
+      type: must_contain
+      pattern: '(?im)(ntp|network-time)'
+    remediation: "Cấu hình ít nhất một máy chủ NTP tin cậy."
+    clo: [CLO2]
+
+  - id: CIS-5.1
+    title: "Xác thực định tuyến (BGP/OSPF không để trống mật khẩu)"
+    severity: high
+    applies_to: frr
+    check:
+      type: must_contain
+      pattern: '(?im)(password|authentication|md5|neighbor .* password)'
+    remediation: "Bật xác thực cho phiên định tuyến (MD5/keychain)."
+    clo: [CLO2]
+
+  - id: CIS-6.1
+    title: "Giới hạn truy cập quản trị bằng ACL"
+    severity: medium
+    applies_to: all
+    check:
+      type: must_contain
+      pattern: '(?im)(access-list|acl|ip access|match .* prefix)'
+    remediation: "Chỉ cho phép dải quản trị 172.20.20.0/24 truy cập."
+    clo: [CLO2]

@@ -1,0 +1,4 @@
+---
+# Chạy toàn bộ vòng: triển khai -> hardening -> (chấm điểm chạy riêng bằng Python)
+- import_playbook: deploy.yml
+- import_playbook: harden.yml

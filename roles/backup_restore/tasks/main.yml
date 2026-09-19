@@ -1,0 +1,10 @@
+---
+# Role backup_restore (Chung) — KB-04: sao lưu về Git & rollback
+- name: "[backup] Kéo cấu hình hiện tại của {{ inventory_hostname }}"
+  ansible.builtin.debug:
+    msg: "TODO: lấy running-config, lưu {{ backup_dir }}/{{ inventory_hostname }}.cfg, commit Git"
+
+- name: "[restore] (khi cần) Khôi phục cấu hình từ bản sao lưu"
+  ansible.builtin.debug:
+    msg: "TODO: đẩy lại cấu hình từ backup khi rollback"
+  when: do_rollback | default(false)

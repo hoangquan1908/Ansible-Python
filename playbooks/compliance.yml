@@ -1,0 +1,18 @@
+---
+# Quân — thu thập cấu hình thật rồi chấm điểm tuân thủ.
+# (Bước chấm điểm chạy bằng Python; playbook lo phần thu thập cấu hình.)
+- name: Thu thap cau hinh hien tai vao compliance/configs/live
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: "[compliance] Lấy running-config"
+      ansible.builtin.debug:
+        msg: "TODO: lưu running-config vào compliance/configs/live/{{ inventory_hostname }}.cfg"
+
+- name: Cham diem tuan thu
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: "Chạy công cụ chấm điểm"
+      ansible.builtin.command: python compliance/tools/score.py --configs compliance/configs/live
+      changed_when: false

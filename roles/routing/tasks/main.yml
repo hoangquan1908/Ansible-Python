@@ -1,0 +1,5 @@
+---
+# Role routing (Chung) — KB-03: định tuyến (BGP/OSPF)
+- name: "[routing] Cấu hình định tuyến cho {{ inventory_hostname }}"
+  ansible.builtin.debug:
+    msg: "TODO: cấu hình BGP/OSPF; bật xác thực phiên (khớp luật CIS-5.1)"

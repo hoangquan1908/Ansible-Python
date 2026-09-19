@@ -1,0 +1,5 @@
+---
+# Bật/tắt từng nhóm hardening (để thử nghiệm đối chứng trước/sau)
+harden_disable_telnet: true
+harden_enforce_snmpv3: true
+harden_mgmt_acl: true

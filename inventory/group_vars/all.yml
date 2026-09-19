@@ -1,0 +1,10 @@
+---
+# Biến áp dụng cho MỌI thiết bị. Giá trị lấy khớp với sot/devices.yaml.
+ntp_servers:
+  - 172.20.20.2
+syslog_servers:
+  - 172.20.20.3
+allowed_mgmt_cidr: "172.20.20.0/24"
+
+# Thư mục lưu bản sao lưu cấu hình (role backup_restore)
+backup_dir: "backups"

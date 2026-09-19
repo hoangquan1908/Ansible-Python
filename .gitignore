@@ -1,0 +1,29 @@
+# ------- Python -------
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# ------- Ansible -------
+*.retry
+*.log
+
+# ------- Bí mật: KHÔNG bao giờ commit -------
+# Chỉ commit file .vault đã mã hóa; không commit khóa/vault-pass
+vault-pass.txt
+*.key
+.vault_pass
+secrets.yml
+
+# ------- Kết quả sinh tự động -------
+compliance/reports/*.html
+compliance/reports/*.json
+compliance/configs/live/*.cfg
+security/reports/*
+!**/.gitkeep
+
+# ------- IDE / OS -------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

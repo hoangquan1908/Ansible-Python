@@ -1,0 +1,14 @@
+---
+# Role hardening (Tùng) — KB-05..KB-10: chuẩn hóa an ninh theo CIS
+# Mỗi task tương ứng một luật trong compliance/policy/cis_rules.yaml.
+- name: "[harden] Tắt Telnet, ép SSHv2 (CIS-1.1, CIS-1.2)"
+  ansible.builtin.debug: {msg: "TODO: remove telnet; enable ssh v2"}
+
+- name: "[harden] SNMPv3, bỏ community public/private (CIS-2.1, CIS-2.2)"
+  ansible.builtin.debug: {msg: "TODO: cấu hình SNMPv3 auth-priv"}
+
+- name: "[harden] Banner, syslog, NTP (CIS-3.1, CIS-4.1, CIS-4.2)"
+  ansible.builtin.debug: {msg: "TODO: banner + logging + ntp"}
+
+- name: "[harden] ACL quản trị, giới hạn {{ allowed_mgmt_cidr }} (CIS-6.1)"
+  ansible.builtin.debug: {msg: "TODO: ACL chỉ cho phép dải quản trị"}

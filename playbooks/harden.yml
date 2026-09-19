@@ -1,0 +1,7 @@
+---
+# Tùng — chuẩn hóa an ninh theo CIS
+- name: Chuan hoa an ninh (hardening)
+  hosts: all
+  gather_facts: false
+  roles:
+    - hardening

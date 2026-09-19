@@ -1,0 +1,22 @@
+# Topo Containerlab — 2 nút khởi đầu (khớp sot/devices.yaml).
+# Dựng:  sudo clab deploy -t lab/topo.clab.yml
+# Xóa :  sudo clab destroy -t lab/topo.clab.yml
+name: datn-lab
+
+topology:
+  nodes:
+    leaf1:
+      kind: nokia_srlinux
+      image: ghcr.io/nokia/srlinux:latest
+      mgmt-ipv4: 172.20.20.11
+    core1:
+      kind: linux
+      image: quay.io/frrouting/frr:master
+      mgmt-ipv4: 172.20.20.12
+
+  links:
+    - endpoints: ["leaf1:e1-1", "core1:eth1"]
+
+mgmt:
+  network: datn-mgmt
+  ipv4-subnet: 172.20.20.0/24

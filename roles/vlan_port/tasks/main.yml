@@ -1,0 +1,5 @@
+---
+# Role vlan_port (Chung) — KB-02: VLAN và cổng
+- name: "[vlan] Cấu hình VLAN & gán cổng cho {{ inventory_hostname }}"
+  ansible.builtin.debug:
+    msg: "TODO: render VLAN/interface từ SoT (vlans, ports) và áp dụng"
