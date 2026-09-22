@@ -1,0 +1,80 @@
+---
+# hardening — chuan hoa an ninh SR Linux theo CIS
+
+# CIS-1.2: Bat SSHv2
+- name: "[harden/srl] CIS-1.2 — Bat SSH server"
+  nokia.srlinux.config:
+    update:
+      - path: /system/ssh-server
+        value:
+          admin-state: enable
+  when: harden_enforce_sshv2
+
+# CIS-3.1: Banner
+- name: "[harden/srl] CIS-3.1 — Dat banner canh bao"
+  nokia.srlinux.config:
+    update:
+      - path: /system/banner
+        value:
+          login-banner: "{{ banner_text }}"
+  when: harden_set_banner
+
+# CIS-4.1: Syslog
+- name: "[harden/srl] CIS-4.1 — Cau hinh syslog"
+  nokia.srlinux.config:
+    update:
+      - path: "/system/logging/remote-server[host={{ item }}]"
+        value:
+          transport: udp
+          remote-port: 514
+          network-instance: mgmt
+  loop: "{{ syslog_servers }}"
+  when: harden_configure_syslog
+
+# CIS-4.2: NTP
+- name: "[harden/srl] CIS-4.2 — Cau hinh NTP"
+  nokia.srlinux.config:
+    update:
+      - path: /system/ntp
+        value:
+          admin-state: enable
+          network-instance: mgmt
+      - path: "/system/ntp/server[address={{ item }}]"
+        value: {}
+  loop: "{{ ntp_servers }}"
+  when: harden_configure_ntp
+
+# CIS-6.1: ACL quan tri
+- name: "[harden/srl] CIS-6.1 — Gioi han truy cap quan tri bang ACL"
+  nokia.srlinux.config:
+    update:
+      - path: /acl/acl-filter[name=mgmt-acl][type=ipv4]/entry[sequence-id=10]
+        value:
+          action:
+            accept: {}
+          match:
+            ipv4:
+              source-ip:
+                prefix: "{{ allowed_mgmt_cidr }}"
+      - path: /acl/acl-filter[name=mgmt-acl][type=ipv4]/entry[sequence-id=100]
+        value:
+          action:
+            drop: {}
+  when: harden_mgmt_acl
+
+# CIS-8.1: Session timeout
+- name: "[harden/srl] CIS-8.1 — Cau hinh idle-timeout"
+  nokia.srlinux.config:
+    update:
+      - path: /system/ssh-server
+        value:
+          timeout: "{{ ssh_timeout }}"
+  when: harden_session_timeout
+
+# CIS-11.1: Hostname
+- name: "[harden/srl] CIS-11.1 — Dam bao hostname duoc dat"
+  nokia.srlinux.config:
+    update:
+      - path: /system/name/host-name
+        value: "{{ inventory_hostname }}"
+  when: harden_hostname

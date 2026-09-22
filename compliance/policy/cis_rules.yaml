@@ -1,114 +1,215 @@
 # =====================================================================
-# CHÍNH SÁCH TUÂN THỦ DẠNG MÃ (Compliance-as-Code)
+# CHINH SACH TUAN THU DANG MA (Compliance-as-Code) — 18 luat CIS
 # ---------------------------------------------------------------------
-# Mỗi luật = một yêu cầu an ninh (dựa trên CIS Benchmark) được biểu diễn
-# thành phép kiểm chứng tự động. Đây là "hợp đồng dữ liệu" số 2.
+# Moi luat = mot yeu cau an ninh (dua tren CIS Benchmark) duoc bieu dien
+# thanh phep kiem chung tu dong. Day la "hop dong du lieu" so 2.
 #
-# Kiểu kiểm tra (check.type):
-#   must_contain     : cấu hình BẮT BUỘC khớp regex (có -> đạt)
-#   must_not_contain : cấu hình KHÔNG ĐƯỢC khớp regex (không có -> đạt)
+# Kieu kiem tra (check.type):
+#   must_contain     : cau hinh BAT BUOC khop regex (co -> dat)
+#   must_not_contain : cau hinh KHONG DUOC khop regex (khong co -> dat)
 #
-# Trường:
-#   id          : mã luật (tham chiếu CIS)
-#   title       : mô tả ngắn
-#   severity    : high | medium | low  (dùng để tính điểm có trọng số)
-#   applies_to  : all | srlinux | frr   (lọc theo os của thiết bị)
-#   remediation : cách khắc phục (đưa vào báo cáo cho người vận hành)
-#   clo         : ánh xạ chuẩn đầu ra học phần (phục vụ chấm ĐATN)
+# Truong:
+#   id          : ma luat (tham chieu CIS)
+#   title       : mo ta ngan
+#   severity    : high | medium | low  (dung de tinh diem co trong so)
+#   applies_to  : all | srlinux | frr   (loc theo os cua thiet bi)
+#   remediation : cach khac phuc (dua vao bao cao cho nguoi van hanh)
+#   clo         : anh xa chuan dau ra hoc phan (phuc vu cham DATN)
 # =====================================================================
 
-weights:            # trọng số theo mức nghiêm trọng khi tính điểm
+weights:
   high: 5
   medium: 3
   low: 1
 
 rules:
+  # ==================== NHOM 1: TRUY CAP TU XA ====================
   - id: CIS-1.1
-    title: "Cấm dịch vụ Telnet (chỉ dùng SSH)"
+    title: "Cam dich vu Telnet (chi dung SSH)"
     severity: high
     applies_to: all
     check:
       type: must_not_contain
       pattern: '(?im)^\s*(telnet\s+server|service\s+telnet|transport\s+input\s+telnet)'
-    remediation: "Xóa mọi cấu hình telnet server; chỉ bật SSHv2."
+    remediation: "Xoa moi cau hinh telnet server; chi bat SSHv2."
     clo: [CLO2]
 
   - id: CIS-1.2
-    title: "Bắt buộc SSH phiên bản 2"
+    title: "Bat buoc SSH phien ban 2"
     severity: high
     applies_to: all
     check:
       type: must_contain
       pattern: '(?im)^\s*(ssh\s+server|admin-state\s+enable.*ssh|ssh version 2|transport input ssh)'
-    remediation: "Bật dịch vụ SSH và ép dùng SSHv2."
+    remediation: "Bat dich vu SSH va ep dung SSHv2."
     clo: [CLO2]
 
+  # ==================== NHOM 2: SNMP ====================
   - id: CIS-2.1
-    title: "Không dùng SNMP community mặc định (public/private)"
+    title: "Khong dung SNMP community mac dinh (public/private)"
     severity: high
     applies_to: all
     check:
       type: must_not_contain
       pattern: '(?im)community\s+(public|private)\b'
-    remediation: "Xóa community public/private; chuyển sang SNMPv3."
+    remediation: "Xoa community public/private; chuyen sang SNMPv3."
     clo: [CLO2]
 
   - id: CIS-2.2
-    title: "Bật SNMPv3 (xác thực + mã hóa)"
+    title: "Bat SNMPv3 (xac thuc + ma hoa)"
     severity: medium
     applies_to: all
     check:
       type: must_contain
       pattern: '(?im)(snmp.*v3|usm.*auth.*priv|security-level\s+auth-priv)'
-    remediation: "Cấu hình user SNMPv3 với auth-priv (SHA/AES)."
+    remediation: "Cau hinh user SNMPv3 voi auth-priv (SHA/AES)."
     clo: [CLO2]
 
+  # ==================== NHOM 3: BANNER ====================
   - id: CIS-3.1
-    title: "Có banner cảnh báo truy cập (login banner)"
+    title: "Co banner canh bao truy cap (login banner)"
     severity: low
     applies_to: all
     check:
       type: must_contain
       pattern: '(?im)(banner|login-banner|message-of-the-day|motd)'
-    remediation: "Thêm banner cảnh báo truy cập trái phép."
+    remediation: "Them banner canh bao truy cap trai phep."
     clo: [CLO2]
 
+  # ==================== NHOM 4: GHI NHAT KY ====================
   - id: CIS-4.1
-    title: "Bật ghi nhật ký ra máy chủ syslog"
+    title: "Bat ghi nhat ky ra may chu syslog"
     severity: medium
     applies_to: all
     check:
       type: must_contain
       pattern: '(?im)(logging|log.*server|remote-server|syslog)'
-    remediation: "Cấu hình gửi log về máy chủ syslog tập trung."
+    remediation: "Cau hinh gui log ve may chu syslog tap trung."
     clo: [CLO2, CLO3]
 
   - id: CIS-4.2
-    title: "Đồng bộ thời gian bằng NTP"
+    title: "Dong bo thoi gian bang NTP"
     severity: low
     applies_to: all
     check:
       type: must_contain
       pattern: '(?im)(ntp|network-time)'
-    remediation: "Cấu hình ít nhất một máy chủ NTP tin cậy."
+    remediation: "Cau hinh it nhat mot may chu NTP tin cay."
     clo: [CLO2]
 
+  # ==================== NHOM 5: DINH TUYEN ====================
   - id: CIS-5.1
-    title: "Xác thực định tuyến (BGP/OSPF không để trống mật khẩu)"
+    title: "Xac thuc dinh tuyen (BGP/OSPF khong de trong mat khau)"
     severity: high
     applies_to: frr
     check:
       type: must_contain
       pattern: '(?im)(password|authentication|md5|neighbor .* password)'
-    remediation: "Bật xác thực cho phiên định tuyến (MD5/keychain)."
+    remediation: "Bat xac thuc cho phien dinh tuyen (MD5/keychain)."
     clo: [CLO2]
 
+  # ==================== NHOM 6: KIEM SOAT TRUY CAP ====================
   - id: CIS-6.1
-    title: "Giới hạn truy cập quản trị bằng ACL"
+    title: "Gioi han truy cap quan tri bang ACL"
     severity: medium
     applies_to: all
     check:
       type: must_contain
       pattern: '(?im)(access-list|acl|ip access|match .* prefix)'
-    remediation: "Chỉ cho phép dải quản trị 172.20.20.0/24 truy cập."
+    remediation: "Chi cho phep dai quan tri 172.20.20.0/24 truy cap."
     clo: [CLO2]
+
+  # ==================== NHOM 7: DICH VU MANG ====================
+  - id: CIS-7.1
+    title: "Tat HTTP server khong ma hoa"
+    severity: medium
+    applies_to: all
+    check:
+      type: must_not_contain
+      pattern: '(?im)^\s*ip\s+http\s+server'
+    remediation: "Tat dich vu HTTP, chi dung HTTPS cho quan tri web."
+    clo: [CLO2]
+
+  - id: CIS-7.2
+    title: "Ma hoa mat khau luu trong cau hinh"
+    severity: high
+    applies_to: all
+    check:
+      type: must_contain
+      pattern: '(?im)(service\s+password-encryption|password.*encrypted|hashed-password)'
+    remediation: "Bat service password-encryption hoac dung secret."
+    clo: [CLO2]
+
+  # ==================== NHOM 8: PHIEN QUAN TRI ====================
+  - id: CIS-8.1
+    title: "Cau hinh timeout phien quan tri"
+    severity: medium
+    applies_to: all
+    check:
+      type: must_contain
+      pattern: '(?im)(exec-timeout|idle-timeout|session.*timeout)'
+    remediation: "Dat idle-timeout toi da 10 phut cho phien quan tri."
+    clo: [CLO2]
+
+  - id: CIS-8.2
+    title: "Tat dich vu finger"
+    severity: low
+    applies_to: all
+    check:
+      type: must_not_contain
+      pattern: '(?im)^\s*(service\s+finger|ip\s+finger)'
+    remediation: "Tat dich vu finger (khong su dung)."
+    clo: [CLO2]
+
+  # ==================== NHOM 9: BAO MAT MANG ====================
+  - id: CIS-9.1
+    title: "Tat IP source-route"
+    severity: high
+    applies_to: frr
+    check:
+      type: must_contain
+      pattern: '(?im)(no\s+ip\s+source-route|source-route.*disable)'
+    remediation: "Them no ip source-route de chan gia mao tuyen duong."
+    clo: [CLO2]
+
+  - id: CIS-9.2
+    title: "Bat logging cuc bo (buffer/file)"
+    severity: low
+    applies_to: all
+    check:
+      type: must_contain
+      pattern: '(?im)(logging\s+buffer|log\s+file|log.*local|buffer-size)'
+    remediation: "Bat logging buffer/file de luu nhat ky noi bo."
+    clo: [CLO2, CLO3]
+
+  # ==================== NHOM 10: MAT KHAU ====================
+  - id: CIS-10.1
+    title: "Khong luu mat khau dang ban ro (plaintext yeu)"
+    severity: high
+    applies_to: all
+    check:
+      type: must_not_contain
+      pattern: '(?im)^\s*password\s+(admin|cisco|default|1234|password|test)\s*$'
+    remediation: "Dung mat khau manh, khong de plaintext trong cau hinh."
+    clo: [CLO2]
+
+  - id: CIS-10.2
+    title: "Bat buoc xac thuc dang nhap tren VTY"
+    severity: high
+    applies_to: frr
+    check:
+      type: must_contain
+      pattern: '(?im)(line\s+(vty|con)[\s\S]*?login|login\s+local)'
+    remediation: "Bat login local tren console va VTY."
+    clo: [CLO2]
+
+  # ==================== NHOM 11: DINH DANH ====================
+  - id: CIS-11.1
+    title: "Cau hinh hostname theo chuan dat ten"
+    severity: low
+    applies_to: all
+    check:
+      type: must_contain
+      pattern: '(?im)(hostname|host-name)\s+\S+'
+    remediation: "Dat hostname theo quy uoc dat ten cua to chuc."
+    clo: [CLO1]

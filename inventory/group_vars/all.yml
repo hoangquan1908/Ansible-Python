@@ -1,10 +1,16 @@
 ---
-# Biến áp dụng cho MỌI thiết bị. Giá trị lấy khớp với sot/devices.yaml.
+# Bien ap dung cho MOI thiet bi. Gia tri lay khop voi sot/devices.yaml.
 ntp_servers:
   - 172.20.20.2
 syslog_servers:
   - 172.20.20.3
 allowed_mgmt_cidr: "172.20.20.0/24"
-
-# Thư mục lưu bản sao lưu cấu hình (role backup_restore)
+domain_name: "datn.local"
+dns_servers:
+  - 8.8.8.8
+banner_text: >-
+  CANH BAO: He thong noi bo - Cam truy cap trai phep.
+  Moi hanh vi truy cap deu duoc ghi nhan va giam sat.
+ssh_timeout: 300
 backup_dir: "backups"
+compliance_configs_dir: "compliance/configs/live"

@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Topology{% endblock %}
+{% block content %}
+<h1>So do mang</h1>
+<p class="page-sub">Topology 3 tang: Edge — Spine — Leaf ({{ sot.devices|length }} thiet bi)</p>
+
+<div class="card" style="margin-bottom:24px">
+<svg viewBox="0 0 800 480" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:800px;display:block;margin:0 auto">
+  <defs>
+    <filter id="glow"><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <!-- Links -->
+  <g stroke="#334155" stroke-width="2" fill="none">
+    <!-- edge1 -> spine1 -->
+    <line x1="400" y1="80" x2="250" y2="210"/>
+    <!-- edge1 -> spine2 -->
+    <line x1="400" y1="80" x2="550" y2="210"/>
+    <!-- spine1 -> leaf1 -->
+    <line x1="250" y1="240" x2="130" y2="370"/>
+    <!-- spine1 -> leaf2 -->
+    <line x1="250" y1="240" x2="400" y2="370"/>
+    <!-- spine2 -> leaf2 -->
+    <line x1="550" y1="240" x2="400" y2="370" stroke-dasharray="6"/>
+    <!-- spine2 -> leaf3 -->
+    <line x1="550" y1="240" x2="670" y2="370"/>
+  </g>
+
+  <!-- Tier labels -->
+  <text x="30" y="75" fill="#64748b" font-size="12" font-weight="600">EDGE</text>
+  <text x="30" y="225" fill="#64748b" font-size="12" font-weight="600">SPINE</text>
+  <text x="30" y="385" fill="#64748b" font-size="12" font-weight="600">LEAF</text>
+  <line x1="25" y1="120" x2="775" y2="120" stroke="#1e293b" stroke-width="1" stroke-dasharray="4"/>
+  <line x1="25" y1="290" x2="775" y2="290" stroke="#1e293b" stroke-width="1" stroke-dasharray="4"/>
+
+  <!-- edge1 -->
+  <g transform="translate(400,60)">
+    <rect x="-60" y="-25" width="120" height="50" rx="10" fill="#1e293b" stroke="#f97316" stroke-width="2"/>
+    <text x="0" y="-5" text-anchor="middle" fill="#f97316" font-size="14" font-weight="700">edge1</text>
+    <text x="0" y="12" text-anchor="middle" fill="#94a3b8" font-size="10">FRR · AS65000</text>
+  </g>
+
+  <!-- spine1 -->
+  <g transform="translate(250,225)">
+    <rect x="-60" y="-25" width="120" height="50" rx="10" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
+    <text x="0" y="-5" text-anchor="middle" fill="#3b82f6" font-size="14" font-weight="700">spine1</text>
+    <text x="0" y="12" text-anchor="middle" fill="#94a3b8" font-size="10">SRL · AS65010</text>
+  </g>
+
+  <!-- spine2 -->
+  <g transform="translate(550,225)">
+    <rect x="-60" y="-25" width="120" height="50" rx="10" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
+    <text x="0" y="-5" text-anchor="middle" fill="#3b82f6" font-size="14" font-weight="700">spine2</text>
+    <text x="0" y="12" text-anchor="middle" fill="#94a3b8" font-size="10">SRL · AS65020</text>
+  </g>
+
+  <!-- leaf1 -->
+  <g transform="translate(130,385)">
+    <rect x="-60" y="-25" width="120" height="50" rx="10" fill="#1e293b" stroke="#22c55e" stroke-width="2"/>
+    <text x="0" y="-5" text-anchor="middle" fill="#22c55e" font-size="14" font-weight="700">leaf1</text>
+    <text x="0" y="12" text-anchor="middle" fill="#94a3b8" font-size="10">SRL · AS65101</text>
+  </g>
+
+  <!-- leaf2 -->
+  <g transform="translate(400,385)">
+    <rect x="-60" y="-25" width="120" height="50" rx="10" fill="#1e293b" stroke="#22c55e" stroke-width="2"/>
+    <text x="0" y="-5" text-anchor="middle" fill="#22c55e" font-size="14" font-weight="700">leaf2</text>
+    <text x="0" y="12" text-anchor="middle" fill="#94a3b8" font-size="10">SRL · AS65102</text>
+  </g>
+
+  <!-- leaf3 -->
+  <g transform="translate(670,385)">
+    <rect x="-60" y="-25" width="120" height="50" rx="10" fill="#1e293b" stroke="#22c55e" stroke-width="2"/>
+    <text x="0" y="-5" text-anchor="middle" fill="#22c55e" font-size="14" font-weight="700">leaf3</text>
+    <text x="0" y="12" text-anchor="middle" fill="#94a3b8" font-size="10">FRR · AS65103</text>
+  </g>
+
+  <!-- Link labels -->
+  <text x="310" y="140" fill="#475569" font-size="9" transform="rotate(-35,310,140)">10.0.1.0/30</text>
+  <text x="480" y="140" fill="#475569" font-size="9" transform="rotate(35,480,140)">10.0.2.0/30</text>
+  <text x="170" y="310" fill="#475569" font-size="9" transform="rotate(-30,170,310)">10.0.11.0/30</text>
+  <text x="310" y="310" fill="#475569" font-size="9" transform="rotate(10,310,310)">10.0.12.0/30</text>
+  <text x="490" y="310" fill="#475569" font-size="9" transform="rotate(-10,490,310)">10.0.22.0/30</text>
+  <text x="620" y="310" fill="#475569" font-size="9" transform="rotate(30,620,310)">10.0.23.0/30</text>
+</svg>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <h2>Thong tin topology</h2>
+    <table>
+      <tr><td style="color:var(--muted)">So thiet bi</td><td>{{ sot.devices|length }}</td></tr>
+      <tr><td style="color:var(--muted)">SR Linux</td><td>{{ sot.devices|selectattr('os','eq','srlinux')|list|length }} (spine1, spine2, leaf1, leaf2)</td></tr>
+      <tr><td style="color:var(--muted)">FRRouting</td><td>{{ sot.devices|selectattr('os','eq','frr')|list|length }} (edge1, leaf3)</td></tr>
+      <tr><td style="color:var(--muted)">So tang</td><td>3 (Edge — Spine — Leaf)</td></tr>
+      <tr><td style="color:var(--muted)">So lien ket</td><td>6 data links + 6 mgmt</td></tr>
+      <tr><td style="color:var(--muted)">Giao thuc</td><td>eBGP (multi-AS)</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>Danh sach VLAN</h2>
+    <table>
+      <thead><tr><th>ID</th><th>Ten</th><th>Mo ta</th></tr></thead>
+      <tbody>
+      {% for v in sot.vlans %}
+      <tr><td>{{ v.id }}</td><td><b>{{ v.name }}</b></td><td>{{ v.description }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,12 @@
+! ============================================================
+! Cau hinh nen tang — sinh tu dong boi Ansible (base_config)
+! Thiet bi: {{ inventory_hostname }} | Nen tang: FRRouting
+! ============================================================
+!
+hostname {{ base_hostname }}
+!
+! --- Syslog ---
+log syslog informational
+log file /var/log/frr/frr.log
+!
+end

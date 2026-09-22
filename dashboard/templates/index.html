@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Tong quan{% endblock %}
+{% block content %}
+<h1>Kiem soat tuan thu an ninh mang</h1>
+<p class="page-sub">Do an tot nghiep — Tu dong hoa cau hinh va kiem soat tuan thu an ninh mang</p>
+
+<!-- STAT CARDS -->
+<div class="grid-4" style="margin-bottom:24px">
+  <div class="card">
+    <div class="card-title">Diem tuan thu</div>
+    <div class="stat-value {{ 'score-high' if latest and latest.overall_score >= 90 else 'score-mid' if latest and latest.overall_score >= 70 else 'score-low' }}">
+      {{ '%.1f'|format(latest.overall_score) if latest else '--' }}%
+    </div>
+    <div class="stat-sub">Toan he thong</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Thiet bi</div>
+    <div class="stat-value">{{ sot.devices|length }}</div>
+    <div class="stat-sub">{{ sot.devices|selectattr('os','eq','srlinux')|list|length }} SR Linux · {{ sot.devices|selectattr('os','eq','frr')|list|length }} FRR</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Luat CIS</div>
+    <div class="stat-value">18</div>
+    <div class="stat-sub">11 nhom kiem soat</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Lan quet</div>
+    <div class="stat-value">{{ history|length }}</div>
+    <div class="stat-sub">{% if latest %}Lan cuoi: {{ latest.scanned_at[:16] }}{% else %}Chua co{% endif %}</div>
+  </div>
+</div>
+
+<!-- ACTIONS -->
+<div style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap">
+  <button class="btn btn-primary" onclick="runScan('golden')">Quet truoc hardening</button>
+  <button class="btn btn-primary" onclick="runScan('after')">Quet sau hardening</button>
+  <button class="btn btn-secondary" onclick="runCompare()">So sanh truoc/sau</button>
+</div>
+
+<!-- DEVICE SCORES -->
+{% if device_scores %}
+<div class="card" style="margin-bottom:24px">
+  <h2>Diem theo thiet bi</h2>
+  <div class="chart-bars" id="deviceChart">
+    {% for d in device_scores %}
+    <div style="flex:1;text-align:center">
+      <div class="chart-bar" style="height:{{ d.score }}%;background:{{ 'var(--green)' if d.score >= 90 else 'var(--yellow)' if d.score >= 70 else 'var(--red)' }};" title="{{ d.device }}: {{ d.score }}%"></div>
+      <div class="chart-label">{{ d.device }}<br>{{ '%.0f'|format(d.score) }}%</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:24px">
+  <h2>Chi tiet thiet bi</h2>
+  <table>
+    <thead><tr><th>Thiet bi</th><th>Nen tang</th><th>Vai tro</th><th>Diem</th><th>Luat dat</th><th>Vi pham</th><th>Trang thai</th></tr></thead>
+    <tbody>
+    {% for d in device_scores %}
+    <tr>
+      <td><b>{{ d.device }}</b></td>
+      <td><span class="badge badge-os">{{ d.os }}</span></td>
+      <td>{{ d.role }}</td>
+      <td class="{{ 'score-high' if d.score >= 90 else 'score-mid' if d.score >= 70 else 'score-low' }}" style="font-weight:700">{{ '%.1f'|format(d.score) }}%</td>
+      <td>{{ d.n_rules - d.n_violations }}/{{ d.n_rules }}</td>
+      <td>{{ d.n_violations }}</td>
+      <td>
+        {% if d.n_violations == 0 %}<span class="badge badge-ok">DAT CHUAN</span>
+        {% elif d.score >= 70 %}<span class="badge badge-warn">CAN HARDENING</span>
+        {% else %}<span class="badge badge-fail">NGUY CO</span>{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- COMPARISON RESULT -->
+<div id="compareResult" class="card hidden" style="margin-bottom:24px;border-left:3px solid var(--green)">
+  <h2>Ket qua so sanh truoc / sau hardening</h2>
+  <div id="compareContent"></div>
+</div>
+
+<!-- HISTORY -->
+{% if history %}
+<div class="card">
+  <h2>Lich su quet</h2>
+  <table>
+    <thead><tr><th>#</th><th>Thoi gian</th><th>Nguon</th><th>Diem</th><th>So thiet bi</th></tr></thead>
+    <tbody>
+    {% for h in history %}
+    <tr>
+      <td>{{ h.id }}</td>
+      <td>{{ h.scanned_at }}</td>
+      <td><span class="badge badge-os">{{ h.config_source }}</span></td>
+      <td class="{{ 'score-high' if h.overall_score >= 90 else 'score-mid' if h.overall_score >= 70 else 'score-low' }}" style="font-weight:700">{{ '%.1f'|format(h.overall_score) }}%</td>
+      <td>{{ h.n_devices }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function runScan(dir) {
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = 'Dang quet...';
+  try {
+    const r = await fetch('/api/scan', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({config_dir: dir})});
+    const d = await r.json();
+    if (d.error) { alert(d.error); return; }
+    alert(`Quet xong! Diem: ${d.overall_score}% (${d.devices} thiet bi)`);
+    location.reload();
+  } catch(e) { alert('Loi: ' + e); }
+  finally { btn.disabled = false; btn.textContent = dir === 'golden' ? 'Quet truoc hardening' : 'Quet sau hardening'; }
+}
+
+async function runCompare() {
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = 'Dang so sanh...';
+  try {
+    const r = await fetch('/api/compare', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({before:'golden', after:'after'})});
+    const d = await r.json();
+    let html = `<div class="grid-3" style="margin-bottom:16px">
+      <div class="card"><div class="card-title">Truoc</div><div class="stat-value ${scoreClass(d.before.score)}">${d.before.score}%</div></div>
+      <div class="card"><div class="card-title">Sau</div><div class="stat-value ${scoreClass(d.after.score)}">${d.after.score}%</div></div>
+      <div class="card"><div class="card-title">Cai thien</div><div class="stat-value score-high">+${d.improvement}%</div></div>
+    </div><table><thead><tr><th>Thiet bi</th><th>Truoc</th><th>Sau</th><th>Thay doi</th></tr></thead><tbody>`;
+    for (let i = 0; i < d.before.devices.length; i++) {
+      const b = d.before.devices[i], a = d.after.devices[i];
+      const diff = (a.score - b.score).toFixed(1);
+      html += `<tr><td><b>${b.device}</b></td><td class="${scoreClass(b.score)}" style="font-weight:700">${b.score}%</td><td class="${scoreClass(a.score)}" style="font-weight:700">${a.score}%</td><td class="score-high" style="font-weight:700">+${diff}%</td></tr>`;
+    }
+    html += '</tbody></table>';
+    document.getElementById('compareContent').innerHTML = html;
+    document.getElementById('compareResult').classList.remove('hidden');
+  } catch(e) { alert('Loi: ' + e); }
+  finally { btn.disabled = false; btn.textContent = 'So sanh truoc/sau'; }
+}
+</script>
+{% endblock %}

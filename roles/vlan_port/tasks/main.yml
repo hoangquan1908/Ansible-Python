@@ -1,5 +1,11 @@
 ---
-# Role vlan_port (Chung) — KB-02: VLAN và cổng
-- name: "[vlan] Cấu hình VLAN & gán cổng cho {{ inventory_hostname }}"
+# Role vlan_port — KB-02: VLAN va gan cong
+# Chi ap dung cho SR Linux (FRR la router thuan, khong quan ly VLAN L2).
+- name: "[vlan] Cau hinh VLAN cho SR Linux"
+  ansible.builtin.include_tasks: srlinux.yml
+  when: "'srlinux' in group_names"
+
+- name: "[vlan] Bo qua FRR (router, khong lam VLAN)"
   ansible.builtin.debug:
-    msg: "TODO: render VLAN/interface từ SoT (vlans, ports) và áp dụng"
+    msg: "{{ inventory_hostname }} la router FRR — khong cau hinh VLAN L2."
+  when: "'frr' in group_names"

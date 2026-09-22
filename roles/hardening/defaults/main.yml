@@ -1,5 +1,14 @@
 ---
-# Bật/tắt từng nhóm hardening (để thử nghiệm đối chứng trước/sau)
+# Bat/tat tung nhom hardening (de thu nghiem doi chung truoc/sau)
 harden_disable_telnet: true
+harden_enforce_sshv2: true
 harden_enforce_snmpv3: true
+harden_set_banner: true
+harden_configure_syslog: true
+harden_configure_ntp: true
 harden_mgmt_acl: true
+harden_bgp_auth: true
+harden_disable_http: true
+harden_password_encryption: true
+harden_session_timeout: true
+harden_hostname: true

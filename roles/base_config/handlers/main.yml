@@ -1,0 +1,9 @@
+---
+- name: frr_reload
+  ansible.builtin.shell: vtysh -c "write memory" 2>&1 || true
+  listen: frr_reload
+
+- name: srl_save_config
+  ansible.builtin.debug:
+    msg: "SR Linux auto-commits — no explicit save needed"
+  listen: srl_save_config

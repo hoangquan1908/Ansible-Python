@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Sinh inventory Ansible TỪ Nguồn dữ liệu tin cậy (SoT).
-Nhờ vậy chỉ cần sửa 1 chỗ (sot/devices.yaml) là cả inventory tự cập nhật —
-đúng nguyên tắc single source of truth.
+Sinh inventory Ansible TU Nguon du lieu tin cay (SoT).
+Chi can sua 1 cho (sot/devices.yaml) la ca inventory tu cap nhat.
 
-Chạy:  python scripts/sot_to_inventory.py
+Chay:  python scripts/sot_to_inventory.py
 """
 from pathlib import Path
 import yaml
@@ -24,15 +23,18 @@ def main():
             "ansible_host": d["mgmt_ip"],
             "device_role": d.get("role", ""),
             "hardening_profile": d.get("profile", "baseline"),
+            "loopback_ip": d.get("loopback_ip", ""),
+            "device_interfaces": d.get("interfaces", []),
+            "device_bgp": d.get("bgp", {}),
         }
     inventory = {"all": {"children": {os: grp for os, grp in groups.items()}}}
     OUT.write_text(
-        "# TỰ SINH từ sot/devices.yaml — ĐỪNG sửa tay, sửa ở SoT rồi chạy lại.\n"
+        "# TU SINH tu sot/devices.yaml — DUNG sua tay, sua o SoT roi chay lai.\n"
         + yaml.safe_dump(inventory, allow_unicode=True, sort_keys=False),
         encoding="utf-8",
     )
     n = sum(len(g["hosts"]) for g in groups.values())
-    print(f"Đã sinh {OUT} với {n} thiết bị thuộc {len(groups)} nhóm: {', '.join(groups)}")
+    print(f"Da sinh {OUT} voi {n} thiet bi thuoc {len(groups)} nhom: {', '.join(groups)}")
 
 
 if __name__ == "__main__":

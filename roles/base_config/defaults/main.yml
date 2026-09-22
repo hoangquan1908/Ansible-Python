@@ -1,2 +1,7 @@
 ---
-banner_text: "Canh bao: He thong noi bo, cam truy cap trai phep."
+base_hostname: "{{ inventory_hostname }}"
+base_domain: "{{ domain_name | default('datn.local') }}"
+base_ntp_servers: "{{ ntp_servers | default(['172.20.20.2']) }}"
+base_syslog_servers: "{{ syslog_servers | default(['172.20.20.3']) }}"
+base_banner: "{{ banner_text | default('Unauthorized access prohibited.') }}"
+base_dns_servers: "{{ dns_servers | default(['8.8.8.8']) }}"

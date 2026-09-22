@@ -1,0 +1,10 @@
+---
+# PLAYBOOK: Sao luu cau hinh running-config tu thiet bi
+# Chay: ansible-playbook -i inventory/hosts.yml backup.yml
+- name: "SAO LUU — Thu thap running-config tu moi thiet bi"
+  hosts: all
+  gather_facts: false
+  collections:
+    - nokia.srlinux
+  roles:
+    - backup_restore

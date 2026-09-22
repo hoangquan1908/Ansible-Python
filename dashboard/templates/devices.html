@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Thiet bi{% endblock %}
+{% block content %}
+<h1>Danh sach thiet bi</h1>
+<p class="page-sub">{{ sot.devices|length }} thiet bi trong he thong — chi tiet cau hinh va diem tuan thu</p>
+
+<div class="grid-2" style="margin-bottom:24px">
+{% for dev in sot.devices %}
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+    <div>
+      <h2 style="margin-bottom:2px">{{ dev.name }}</h2>
+      <span class="badge badge-os">{{ dev.os }}</span>
+      <span style="color:var(--muted);font-size:13px;margin-left:8px">{{ dev.role }} · AS{{ dev.bgp.asn }}</span>
+    </div>
+    {% if device_details.get(dev.name) %}
+    {% set dd = device_details[dev.name] %}
+    <div class="stat-value {{ 'score-high' if dd.score >= 90 else 'score-mid' if dd.score >= 70 else 'score-low' }}" style="font-size:28px">
+      {{ '%.1f'|format(dd.score) }}%
+    </div>
+    {% else %}
+    <div class="stat-value" style="font-size:28px;color:var(--muted)">--</div>
+    {% endif %}
+  </div>
+
+  <table>
+    <tr><td style="color:var(--muted);width:120px">Management IP</td><td><code>{{ dev.mgmt_ip }}</code></td></tr>
+    <tr><td style="color:var(--muted)">Router ID</td><td><code>{{ dev.bgp.router_id }}</code></td></tr>
+    <tr><td style="color:var(--muted)">ASN</td><td>{{ dev.bgp.asn }}</td></tr>
+  </table>
+
+  {% if dev.interfaces %}
+  <h3 style="font-size:14px;margin:12px 0 6px;color:var(--muted)">Interfaces</h3>
+  <table>
+    <thead><tr><th>Ten</th><th>IP</th><th>Mo ta</th></tr></thead>
+    <tbody>
+    {% for iface in dev.interfaces %}
+    <tr>
+      <td><code>{{ iface.name }}</code></td>
+      <td>{{ iface.ipv4 | default('-') }}</td>
+      <td style="color:var(--muted)">{{ iface.description | default('') }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  {% if dev.bgp.neighbors %}
+  <h3 style="font-size:14px;margin:12px 0 6px;color:var(--muted)">BGP Neighbors</h3>
+  <table>
+    <thead><tr><th>Neighbor</th><th>Remote AS</th><th>Mo ta</th></tr></thead>
+    <tbody>
+    {% for n in dev.bgp.neighbors %}
+    <tr>
+      <td><code>{{ n.address }}</code></td>
+      <td>{{ n.remote_as }}</td>
+      <td style="color:var(--muted)">{{ n.description | default('') }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  {% if device_details.get(dev.name) and device_details[dev.name].violations %}
+  <h3 style="font-size:14px;margin:12px 0 6px;color:var(--red)">Vi pham ({{ device_details[dev.name].n_violations }})</h3>
+  <table>
+    <thead><tr><th>Luat</th><th>Nhom</th><th>Trang thai</th></tr></thead>
+    <tbody>
+    {% for v in device_details[dev.name].violations %}
+    <tr>
+      <td>{{ v.rule_id }}</td>
+      <td>{{ v.group }}</td>
+      <td><span class="badge badge-fail">VI PHAM</span></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endfor %}
+</div>
+{% endblock %}

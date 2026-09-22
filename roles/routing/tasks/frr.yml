@@ -1,0 +1,29 @@
+---
+# routing — cau hinh BGP tren FRR (template + vtysh)
+
+- name: "[routing/frr] Cau hinh IP tren interface"
+  ansible.builtin.shell: |
+    ip addr flush dev {{ item.name }}
+    ip addr add {{ item.ipv4 }} dev {{ item.name }}
+    ip link set {{ item.name }} up
+  loop: "{{ device_interfaces }}"
+  loop_control:
+    label: "{{ item.name }} — {{ item.ipv4 }}"
+  changed_when: true
+
+- name: "[routing/frr] Cau hinh loopback"
+  ansible.builtin.shell: |
+    ip addr add {{ loopback_ip }}/32 dev lo 2>/dev/null || true
+  when: loopback_ip is defined and loopback_ip | length > 0
+  changed_when: true
+
+- name: "[routing/frr] Sinh cau hinh BGP tu template Jinja2"
+  ansible.builtin.template:
+    src: bgp_frr.j2
+    dest: /etc/frr/bgp.conf
+    mode: "0640"
+
+- name: "[routing/frr] Ap dung cau hinh BGP qua vtysh"
+  ansible.builtin.shell: |
+    vtysh -f /etc/frr/bgp.conf
+  changed_when: true

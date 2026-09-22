@@ -27,3 +27,11 @@ security/reports/*
 .idea/
 .DS_Store
 Thumbs.db
+
+# Ansible collections cài cục bộ
+collections/
+# Containerlab runtime
+lab/clab-*/
+# Bản sao lưu & cấu hình sinh tự động
+backups/
+compliance/configs/after/

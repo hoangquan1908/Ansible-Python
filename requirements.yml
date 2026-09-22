@@ -1,8 +1,8 @@
 ---
-# Ansible collections dùng cho đồ án.
-# Cài: ansible-galaxy collection install -r requirements.yml
+# Ansible collections dung cho do an.
+# Cai: ansible-galaxy collection install -r requirements.yml
 collections:
   - name: ansible.netcommon
+    version: ">=5.0.0"
   - name: nokia.srlinux
-  # FRR cấu hình qua file/vtysh nên KHÔNG cần collection frrouting.frr
-  #  (collection này đang lỗi metadata, đã bỏ chủ đích).
+    version: ">=0.2.0"

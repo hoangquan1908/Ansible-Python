@@ -1,0 +1,26 @@
+! ============================================================
+! Cau hinh BGP — sinh tu dong boi Ansible (routing)
+! Thiet bi: {{ inventory_hostname }} | ASN: {{ device_bgp.asn }}
+! ============================================================
+!
+router bgp {{ device_bgp.asn }}
+ bgp router-id {{ device_bgp.router_id }}
+ no bgp ebgp-requires-policy
+{% for nbr in device_bgp.neighbors | default([]) %}
+ neighbor {{ nbr.address }} remote-as {{ nbr.remote_as }}
+{% if nbr.description is defined %}
+ neighbor {{ nbr.address }} description {{ nbr.description }}
+{% endif %}
+{% if nbr.password is defined %}
+ neighbor {{ nbr.address }} password {{ nbr.password }}
+{% endif %}
+{% endfor %}
+ !
+ address-family ipv4 unicast
+{% for nbr in device_bgp.neighbors | default([]) %}
+  neighbor {{ nbr.address }} activate
+{% endfor %}
+  redistribute connected
+ exit-address-family
+!
+end

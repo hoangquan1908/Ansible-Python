@@ -1,21 +1,68 @@
-# Topo Containerlab — 2 nút khởi đầu (khớp sot/devices.yaml).
-# Dựng:  sudo clab deploy -t lab/topo.clab.yml
-# Xóa :  sudo clab destroy -t lab/topo.clab.yml
+# =====================================================================
+# Topology Containerlab — 6 thiet bi, 3 tang (Edge-Spine-Leaf)
+# Khop voi sot/devices.yaml v2.0
+#
+# Dung:  clab deploy -t lab/topo.clab.yml
+# Xoa :  clab destroy -t lab/topo.clab.yml --cleanup
+# =====================================================================
 name: datn-lab
 
 topology:
   nodes:
-    leaf1:
+    # --- TANG EDGE ---
+    edge1:
+      kind: linux
+      image: quay.io/frrouting/frr:master
+      mgmt-ipv4: 172.20.20.10
+      exec:
+        - apk add --no-cache python3 openssh-server
+        - ssh-keygen -A
+        - echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+        - /usr/sbin/sshd
+        - sed -i 's/^bgpd=no/bgpd=yes/' /etc/frr/daemons
+
+    # --- TANG SPINE ---
+    spine1:
       kind: nokia_srlinux
       image: ghcr.io/nokia/srlinux:latest
       mgmt-ipv4: 172.20.20.11
-    core1:
-      kind: linux
-      image: quay.io/frrouting/frr:master
+
+    spine2:
+      kind: nokia_srlinux
+      image: ghcr.io/nokia/srlinux:latest
       mgmt-ipv4: 172.20.20.12
 
+    # --- TANG LEAF ---
+    leaf1:
+      kind: nokia_srlinux
+      image: ghcr.io/nokia/srlinux:latest
+      mgmt-ipv4: 172.20.20.21
+
+    leaf2:
+      kind: nokia_srlinux
+      image: ghcr.io/nokia/srlinux:latest
+      mgmt-ipv4: 172.20.20.22
+
+    leaf3:
+      kind: linux
+      image: quay.io/frrouting/frr:master
+      mgmt-ipv4: 172.20.20.23
+      exec:
+        - apk add --no-cache python3 openssh-server
+        - ssh-keygen -A
+        - echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+        - /usr/sbin/sshd
+        - sed -i 's/^bgpd=no/bgpd=yes/' /etc/frr/daemons
+
   links:
-    - endpoints: ["leaf1:e1-1", "core1:eth1"]
+    # Edge <-> Spine
+    - endpoints: ["edge1:eth1", "spine1:e1-1"]
+    - endpoints: ["edge1:eth2", "spine2:e1-1"]
+    # Spine <-> Leaf
+    - endpoints: ["spine1:e1-2", "leaf1:e1-1"]
+    - endpoints: ["spine1:e1-3", "leaf2:e1-1"]
+    - endpoints: ["spine2:e1-2", "leaf2:e1-2"]
+    - endpoints: ["spine2:e1-3", "leaf3:eth1"]
 
 mgmt:
   network: datn-mgmt

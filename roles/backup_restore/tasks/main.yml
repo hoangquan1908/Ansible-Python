@@ -1,10 +1,17 @@
 ---
-# Role backup_restore (Chung) — KB-04: sao lưu về Git & rollback
-- name: "[backup] Kéo cấu hình hiện tại của {{ inventory_hostname }}"
-  ansible.builtin.debug:
-    msg: "TODO: lấy running-config, lưu {{ backup_dir }}/{{ inventory_hostname }}.cfg, commit Git"
+# Role backup_restore — KB-04: sao luu running-config va rollback
+- name: "[backup] Tao thu muc sao luu"
+  ansible.builtin.file:
+    path: "{{ playbook_dir }}/{{ backup_dir }}"
+    state: directory
+    mode: "0755"
+  delegate_to: localhost
+  run_once: true
 
-- name: "[restore] (khi cần) Khôi phục cấu hình từ bản sao lưu"
-  ansible.builtin.debug:
-    msg: "TODO: đẩy lại cấu hình từ backup khi rollback"
-  when: do_rollback | default(false)
+- name: "[backup] Sao luu SR Linux"
+  ansible.builtin.include_tasks: srlinux.yml
+  when: "'srlinux' in group_names"
+
+- name: "[backup] Sao luu FRR"
+  ansible.builtin.include_tasks: frr.yml
+  when: "'frr' in group_names"

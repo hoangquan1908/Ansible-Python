@@ -1,0 +1,48 @@
+---
+# base_config — tasks danh cho Nokia SR Linux (JSON-RPC qua nokia.srlinux.config)
+
+- name: "[base/srl] Dat hostname"
+  nokia.srlinux.config:
+    update:
+      - path: /system/name/host-name
+        value: "{{ base_hostname }}"
+
+- name: "[base/srl] Cau hinh NTP"
+  nokia.srlinux.config:
+    update:
+      - path: /system/ntp
+        value:
+          admin-state: enable
+          network-instance: mgmt
+  notify: srl_save_config
+
+- name: "[base/srl] Them NTP server"
+  nokia.srlinux.config:
+    update:
+      - path: "/system/ntp/server[address={{ item }}]"
+        value: {}
+  loop: "{{ base_ntp_servers }}"
+
+- name: "[base/srl] Cau hinh syslog"
+  nokia.srlinux.config:
+    update:
+      - path: "/system/logging/remote-server[host={{ item }}]"
+        value:
+          transport: udp
+          remote-port: 514
+          network-instance: mgmt
+  loop: "{{ base_syslog_servers }}"
+
+- name: "[base/srl] Dat banner dang nhap"
+  nokia.srlinux.config:
+    update:
+      - path: /system/banner
+        value:
+          login-banner: "{{ base_banner }}"
+
+- name: "[base/srl] Bat SSH server"
+  nokia.srlinux.config:
+    update:
+      - path: /system/ssh-server
+        value:
+          admin-state: enable

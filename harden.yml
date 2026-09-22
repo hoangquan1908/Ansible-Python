@@ -1,0 +1,10 @@
+---
+# PLAYBOOK: Chuan hoa an ninh theo CIS Benchmark
+# Chay: ansible-playbook -i inventory/hosts.yml harden.yml
+- name: "HARDENING — Chuan hoa an ninh mang theo CIS"
+  hosts: all
+  gather_facts: false
+  collections:
+    - nokia.srlinux
+  roles:
+    - hardening

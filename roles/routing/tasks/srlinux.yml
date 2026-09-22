@@ -1,0 +1,81 @@
+---
+# routing — cau hinh BGP tren SR Linux
+
+- name: "[routing/srl] Cau hinh interface vat ly"
+  nokia.srlinux.config:
+    update:
+      - path: "/interface[name={{ item.name }}]"
+        value:
+          admin-state: enable
+          description: "{{ item.description }}"
+          subinterface:
+            - index: 0
+              ipv4:
+                admin-state: enable
+                address:
+                  - ip-prefix: "{{ item.ipv4 }}"
+  loop: "{{ device_interfaces }}"
+  loop_control:
+    label: "{{ item.name }} — {{ item.ipv4 }}"
+
+- name: "[routing/srl] Cau hinh loopback"
+  nokia.srlinux.config:
+    update:
+      - path: "/interface[name=lo0]/subinterface[index=0]"
+        value:
+          ipv4:
+            admin-state: enable
+            address:
+              - ip-prefix: "{{ loopback_ip }}/32"
+  when: loopback_ip is defined and loopback_ip | length > 0
+
+- name: "[routing/srl] Gan interface vao network-instance default"
+  nokia.srlinux.config:
+    update:
+      - path: "/network-instance[name=default]"
+        value:
+          interface:
+            - name: "{{ item.name }}.0"
+  loop: "{{ device_interfaces }}"
+  loop_control:
+    label: "{{ item.name }}.0"
+
+- name: "[routing/srl] Gan loopback vao network-instance default"
+  nokia.srlinux.config:
+    update:
+      - path: "/network-instance[name=default]"
+        value:
+          interface:
+            - name: "lo0.0"
+  when: loopback_ip is defined and loopback_ip | length > 0
+
+- name: "[routing/srl] Cau hinh BGP — ASN, router-id va ipv4-unicast"
+  nokia.srlinux.config:
+    update:
+      - path: /network-instance[name=default]/protocols/bgp
+        value:
+          autonomous-system: "{{ device_bgp.asn }}"
+          router-id: "{{ device_bgp.router_id }}"
+          afi-safi:
+            - afi-safi-name: ipv4-unicast
+              admin-state: enable
+  when: device_bgp.asn is defined
+
+- name: "[routing/srl] Tao BGP peer-group ebgp-peers"
+  nokia.srlinux.config:
+    update:
+      - path: "/network-instance[name=default]/protocols/bgp/group[group-name=ebgp-peers]"
+        value: {}
+  when: device_bgp.asn is defined
+
+- name: "[routing/srl] Cau hinh BGP neighbor"
+  nokia.srlinux.config:
+    update:
+      - path: "/network-instance[name=default]/protocols/bgp/neighbor[peer-address={{ item.address }}]"
+        value:
+          peer-as: "{{ item.remote_as }}"
+          peer-group: ebgp-peers
+          description: "{{ item.description | default('') }}"
+  loop: "{{ device_bgp.neighbors | default([]) }}"
+  loop_control:
+    label: "Neighbor {{ item.address }} AS{{ item.remote_as }}"

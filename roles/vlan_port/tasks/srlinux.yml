@@ -1,0 +1,53 @@
+---
+# vlan_port — tao VLAN tren SR Linux (doc danh sach tu SoT qua bien vlans)
+
+- name: "[vlan/srl] Doc danh sach VLAN tu SoT"
+  ansible.builtin.set_fact:
+    sot_vlans: "{{ lookup('file', playbook_dir + '/sot/devices.yaml') | from_yaml }}"
+
+- name: "[vlan/srl] Tao mac-vrf cho tung VLAN"
+  nokia.srlinux.config:
+    update:
+      - path: "/network-instance[name=vlan{{ item.id }}]"
+        value:
+          type: mac-vrf
+          description: "{{ item.description }}"
+          admin-state: enable
+  loop: "{{ sot_vlans.vlans }}"
+  loop_control:
+    label: "VLAN {{ item.id }} - {{ item.name }}"
+
+- name: "[vlan/srl] Bat vlan-tagging tren interface trunk"
+  nokia.srlinux.config:
+    update:
+      - path: "/interface[name=ethernet-1/2]"
+        value:
+          admin-state: enable
+          vlan-tagging: true
+
+- name: "[vlan/srl] Tao VLAN subinterface"
+  nokia.srlinux.config:
+    update:
+      - path: "/interface[name=ethernet-1/2]/subinterface[index={{ item.id }}]"
+        value:
+          type: bridged
+          vlan:
+            encap:
+              single-tagged:
+                vlan-id: "{{ item.id }}"
+  loop: "{{ sot_vlans.vlans }}"
+  loop_control:
+    label: "VLAN {{ item.id }}"
+  when: sot_vlans.vlans | length > 0
+
+- name: "[vlan/srl] Gan subinterface vao mac-vrf"
+  nokia.srlinux.config:
+    update:
+      - path: "/network-instance[name=vlan{{ item.id }}]"
+        value:
+          interface:
+            - name: "ethernet-1/2.{{ item.id }}"
+  loop: "{{ sot_vlans.vlans }}"
+  loop_control:
+    label: "vlan{{ item.id }} <- ethernet-1/2.{{ item.id }}"
+  when: sot_vlans.vlans | length > 0

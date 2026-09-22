@@ -1,40 +1,194 @@
 # =====================================================================
-# NGUỒN DỮ LIỆU TIN CẬY (Source of Truth - SoT)
+# NGUON DU LIEU TIN CAY (Source of Truth - SoT) — Phien ban 2.0
 # ---------------------------------------------------------------------
-# Đây là "hợp đồng dữ liệu" số 1 của nhóm. MỌI cấu hình thiết bị đều
-# sinh ra từ file này (Chung dùng để render Jinja2), và công cụ chấm
-# điểm của Quân đọc file này để biết có những thiết bị nào cần kiểm tra.
+# Topology doanh nghiep 3 tang: Edge – Spine – Leaf
 #
-# Quy ước:
-#   - name    : tên thiết bị (trùng tên file cấu hình: configs/live/<name>.cfg)
-#   - os      : nền tảng -> quyết định bộ luật nào áp dụng (srlinux | frr)
-#   - role    : vai trò trong sơ đồ mạng (leaf | spine | core | edge)
-#   - mgmt_ip : IP quản trị (Ansible SSH vào đây)
-#   - profile : nhóm luật hardening áp dụng (baseline | strict)
+#            [edge1] (FRR — border router)
+#               |
+#         ┌─────┴─────┐
+#      [spine1]     [spine2]    (SR Linux — distribution)
+#         |    \   /    |
+#      [leaf1] [leaf2] [leaf3]  (SR Linux x2 + FRR — access)
+#
+# 6 thiet bi, 2 nen tang (Nokia SR Linux + FRRouting)
+# eBGP giua cac tang, VLAN tai tang access
 # =====================================================================
 
 meta:
-  ten_de_tai: "Tự động hóa cấu hình và kiểm soát tuân thủ an ninh mạng"
-  nhom: "Kỹ thuật hệ thống và mạng máy tính"
-  phien_ban_sot: "0.1"
+  ten_de_tai: "Tu dong hoa cau hinh va kiem soat tuan thu an ninh mang"
+  nhom: "Ky thuat he thong va mang may tinh"
+  phien_ban_sot: "2.0"
 
 devices:
+  # === TANG EDGE (border) ===
+  - name: edge1
+    os: frr
+    role: edge
+    mgmt_ip: 172.20.20.10
+    profile: strict
+    loopback_ip: 10.255.0.1
+    interfaces:
+      - name: eth1
+        description: "Downlink to spine1"
+        ipv4: 10.0.1.1/30
+      - name: eth2
+        description: "Downlink to spine2"
+        ipv4: 10.0.2.1/30
+    bgp:
+      asn: 65000
+      router_id: 10.255.0.1
+      neighbors:
+        - address: 10.0.1.2
+          remote_as: 65010
+          description: "eBGP to spine1"
+        - address: 10.0.2.2
+          remote_as: 65020
+          description: "eBGP to spine2"
+
+  # === TANG SPINE (distribution) ===
+  - name: spine1
+    os: srlinux
+    role: spine
+    mgmt_ip: 172.20.20.11
+    profile: strict
+    loopback_ip: 10.255.0.11
+    interfaces:
+      - name: ethernet-1/1
+        description: "Uplink to edge1"
+        ipv4: 10.0.1.2/30
+      - name: ethernet-1/2
+        description: "Downlink to leaf1"
+        ipv4: 10.0.11.1/30
+      - name: ethernet-1/3
+        description: "Downlink to leaf2"
+        ipv4: 10.0.12.1/30
+    bgp:
+      asn: 65010
+      router_id: 10.255.0.11
+      neighbors:
+        - address: 10.0.1.1
+          remote_as: 65000
+          description: "eBGP to edge1"
+        - address: 10.0.11.2
+          remote_as: 65101
+          description: "eBGP to leaf1"
+        - address: 10.0.12.2
+          remote_as: 65102
+          description: "eBGP to leaf2"
+
+  - name: spine2
+    os: srlinux
+    role: spine
+    mgmt_ip: 172.20.20.12
+    profile: strict
+    loopback_ip: 10.255.0.12
+    interfaces:
+      - name: ethernet-1/1
+        description: "Uplink to edge1"
+        ipv4: 10.0.2.2/30
+      - name: ethernet-1/2
+        description: "Downlink to leaf2"
+        ipv4: 10.0.22.1/30
+      - name: ethernet-1/3
+        description: "Downlink to leaf3"
+        ipv4: 10.0.23.1/30
+    bgp:
+      asn: 65020
+      router_id: 10.255.0.12
+      neighbors:
+        - address: 10.0.2.1
+          remote_as: 65000
+          description: "eBGP to edge1"
+        - address: 10.0.22.2
+          remote_as: 65102
+          description: "eBGP to leaf2"
+        - address: 10.0.23.2
+          remote_as: 65103
+          description: "eBGP to leaf3"
+
+  # === TANG LEAF (access) ===
   - name: leaf1
     os: srlinux
     role: leaf
-    mgmt_ip: 172.20.20.11
+    mgmt_ip: 172.20.20.21
     profile: baseline
+    loopback_ip: 10.255.0.21
+    interfaces:
+      - name: ethernet-1/1
+        description: "Uplink to spine1"
+        ipv4: 10.0.11.2/30
+    bgp:
+      asn: 65101
+      router_id: 10.255.0.21
+      neighbors:
+        - address: 10.0.11.1
+          remote_as: 65010
+          description: "eBGP to spine1"
 
-  - name: core1
+  - name: leaf2
+    os: srlinux
+    role: leaf
+    mgmt_ip: 172.20.20.22
+    profile: baseline
+    loopback_ip: 10.255.0.22
+    interfaces:
+      - name: ethernet-1/1
+        description: "Uplink to spine1"
+        ipv4: 10.0.12.2/30
+      - name: ethernet-1/2
+        description: "Uplink to spine2"
+        ipv4: 10.0.22.2/30
+    bgp:
+      asn: 65102
+      router_id: 10.255.0.22
+      neighbors:
+        - address: 10.0.12.1
+          remote_as: 65010
+          description: "eBGP to spine1"
+        - address: 10.0.22.1
+          remote_as: 65020
+          description: "eBGP to spine2"
+
+  - name: leaf3
     os: frr
-    role: core
-    mgmt_ip: 172.20.20.12
-    profile: strict
+    role: leaf
+    mgmt_ip: 172.20.20.23
+    profile: baseline
+    loopback_ip: 10.255.0.23
+    interfaces:
+      - name: eth1
+        description: "Uplink to spine2"
+        ipv4: 10.0.23.2/30
+    bgp:
+      asn: 65103
+      router_id: 10.255.0.23
+      neighbors:
+        - address: 10.0.23.1
+          remote_as: 65020
+          description: "eBGP to spine2"
 
-# Các thông số chung dùng chung toàn hệ thống (dịch vụ hợp lệ, dải NTP...)
+vlans:
+  - id: 10
+    name: MGMT
+    description: "Management VLAN"
+  - id: 20
+    name: SERVERS
+    description: "Server VLAN"
+  - id: 30
+    name: USERS
+    description: "User VLAN"
+
 policy_inputs:
   ntp_servers:
     - 172.20.20.2
   syslog_servers:
     - 172.20.20.3
   allowed_mgmt_cidr: "172.20.20.0/24"
+  domain_name: "datn.local"
+  dns_servers:
+    - 8.8.8.8
+  banner_text: >-
+    CANH BAO: He thong noi bo - Cam truy cap trai phep.
+    Moi hanh vi truy cap deu duoc ghi nhan va giam sat.
+  ssh_timeout: 300
+  max_login_attempts: 3

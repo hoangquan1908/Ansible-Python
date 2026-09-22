@@ -1,0 +1,30 @@
+---
+# backup_restore — sao luu cau hinh SR Linux
+
+- name: "[backup/srl] Lay cau hinh hien tai"
+  nokia.srlinux.get:
+    paths:
+      - path: /system
+        datastore: running
+  register: srl_config
+
+- name: "[backup/srl] Luu cau hinh ra file backup"
+  ansible.builtin.copy:
+    content: "{{ srl_config.result | to_nice_json }}"
+    dest: "{{ playbook_dir }}/{{ backup_dir }}/{{ inventory_hostname }}.json"
+    mode: "0644"
+  delegate_to: localhost
+
+- name: "[backup/srl] Lay toan bo cau hinh cho compliance"
+  nokia.srlinux.get:
+    paths:
+      - path: /
+        datastore: running
+  register: srl_full_config
+
+- name: "[backup/srl] Xuat vao compliance/configs/live"
+  ansible.builtin.copy:
+    content: "{{ srl_full_config.result | to_nice_json }}"
+    dest: "{{ playbook_dir }}/{{ compliance_configs_dir }}/{{ inventory_hostname }}.cfg"
+    mode: "0644"
+  delegate_to: localhost

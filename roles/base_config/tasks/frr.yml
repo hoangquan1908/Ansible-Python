@@ -1,0 +1,31 @@
+---
+# base_config — tasks danh cho FRRouting (template + vtysh + shell)
+
+- name: "[base/frr] Tao thu muc log"
+  ansible.builtin.shell: |
+    mkdir -p /var/log/frr && chown frr:frr /var/log/frr
+  changed_when: false
+
+- name: "[base/frr] Sinh cau hinh nen tang tu template Jinja2"
+  ansible.builtin.template:
+    src: base_frr.j2
+    dest: /etc/frr/base.conf
+    mode: "0640"
+
+- name: "[base/frr] Ap dung cau hinh qua vtysh"
+  ansible.builtin.shell: |
+    vtysh -f /etc/frr/base.conf 2>&1 || true
+  changed_when: true
+
+- name: "[base/frr] Cau hinh NTP qua Linux (chrony/ntpdate)"
+  ansible.builtin.shell: |
+    which ntpdate && ntpdate {{ item }} || true
+  loop: "{{ base_ntp_servers }}"
+  changed_when: false
+  ignore_errors: true
+
+- name: "[base/frr] Dat banner qua file"
+  ansible.builtin.copy:
+    content: "{{ base_banner }}"
+    dest: /etc/motd
+    mode: "0644"

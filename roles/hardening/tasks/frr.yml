@@ -1,0 +1,44 @@
+---
+# hardening — chuan hoa an ninh FRR theo CIS
+
+- name: "[harden/frr] Tao thu muc log"
+  ansible.builtin.shell: |
+    mkdir -p /var/log/frr && chown frr:frr /var/log/frr
+  changed_when: false
+
+- name: "[harden/frr] Sinh cau hinh hardening tu template"
+  ansible.builtin.template:
+    src: hardening_frr.j2
+    dest: /etc/frr/hardening.conf
+    mode: "0640"
+
+- name: "[harden/frr] Ap dung cau hinh hardening qua vtysh"
+  ansible.builtin.shell: |
+    vtysh -f /etc/frr/hardening.conf 2>&1 || true
+  changed_when: true
+
+- name: "[harden/frr] Luu cau hinh"
+  ansible.builtin.shell: |
+    vtysh -c "write memory" 2>&1 || true
+  changed_when: false
+
+# CIS-1.1: Dam bao telnet khong chay
+- name: "[harden/frr] CIS-1.1 — Tat telnet (telnetd)"
+  ansible.builtin.shell: |
+    killall telnetd 2>/dev/null || true
+  when: harden_disable_telnet
+  changed_when: false
+
+# CIS-3.1: Banner (qua Linux /etc/motd)
+- name: "[harden/frr] CIS-3.1 — Dat banner canh bao"
+  ansible.builtin.copy:
+    content: "{{ banner_text }}"
+    dest: /etc/motd
+    mode: "0644"
+  when: harden_set_banner
+
+# CIS-9.1: Tat IP source-route (qua sysctl)
+- name: "[harden/frr] CIS-9.1 — Tat ip source-route"
+  ansible.builtin.shell: |
+    sysctl -w net.ipv4.conf.all.accept_source_route=0 2>/dev/null || true
+  changed_when: false

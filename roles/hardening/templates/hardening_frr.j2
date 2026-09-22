@@ -1,0 +1,36 @@
+! ============================================================
+! Cau hinh hardening — sinh tu dong boi Ansible (hardening)
+! Thiet bi: {{ inventory_hostname }} | Chuan: CIS Benchmark
+! ============================================================
+!
+! CIS-11.1: Hostname
+hostname {{ inventory_hostname }}
+!
+! CIS-7.2: Ma hoa mat khau
+{% if harden_password_encryption %}
+service password-encryption
+{% endif %}
+!
+! CIS-4.1: Syslog tap trung
+{% if harden_configure_syslog %}
+log syslog informational
+log file /var/log/frr/frr.log
+{% endif %}
+!
+! CIS-6.1: ACL gioi han truy cap quan tri
+{% if harden_mgmt_acl %}
+access-list mgmt-in permit {{ allowed_mgmt_cidr }}
+access-list mgmt-in deny any
+{% endif %}
+!
+! CIS-8.1: Session timeout
+line vty
+{% if harden_session_timeout %}
+ exec-timeout {{ (ssh_timeout | int / 60) | int }} 0
+{% endif %}
+{% if harden_mgmt_acl %}
+ access-class mgmt-in
+{% endif %}
+exit
+!
+end

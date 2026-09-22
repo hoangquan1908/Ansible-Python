@@ -1,5 +1,8 @@
 ---
-# Kết nối tới FRRouting (cấu hình qua SSH + vtysh)
+# Ket noi toi FRRouting (SSH vao Linux container, cau hinh qua template + vtysh)
 ansible_connection: ssh
-ansible_user: frr
-# FRR không có network_os riêng; dùng lệnh vtysh trong role.
+ansible_user: root
+ansible_ssh_private_key_file: "~/.ssh/id_ed25519"
+ansible_become: false
+ansible_shell_type: sh
+ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
