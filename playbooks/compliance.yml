@@ -1,18 +1,29 @@
 ---
-# Quân — thu thập cấu hình thật rồi chấm điểm tuân thủ.
-# (Bước chấm điểm chạy bằng Python; playbook lo phần thu thập cấu hình.)
-- name: Thu thap cau hinh hien tai vao compliance/configs/live
+# Quan — thu thap cau hinh thuc te va cham diem tuan thu
+# Chay: ansible-playbook -i inventory/hosts.yml playbooks/compliance.yml
+- name: "Thu thap cau hinh hien tai tu thiet bi"
   hosts: all
   gather_facts: false
-  tasks:
-    - name: "[compliance] Lấy running-config"
-      ansible.builtin.debug:
-        msg: "TODO: lưu running-config vào compliance/configs/live/{{ inventory_hostname }}.cfg"
+  collections:
+    - nokia.srlinux
+  roles:
+    - backup_restore
 
-- name: Cham diem tuan thu
+- name: "Cham diem tuan thu an ninh (CIS Benchmark)"
   hosts: localhost
   gather_facts: false
+  connection: local
   tasks:
-    - name: "Chạy công cụ chấm điểm"
-      ansible.builtin.command: python compliance/tools/score.py --configs compliance/configs/live
+    - name: "[compliance] Chay cong cu cham diem"
+      ansible.builtin.command:
+        cmd: >
+          python3 {{ playbook_dir }}/../compliance/tools/score.py
+          --sot {{ playbook_dir }}/../sot/devices.yaml
+          --policy {{ playbook_dir }}/../compliance/policy/cis_rules.yaml
+          --configs {{ playbook_dir }}/../compliance/configs/live
+      register: score_result
       changed_when: false
+
+    - name: "[compliance] Ket qua"
+      ansible.builtin.debug:
+        msg: "{{ score_result.stdout }}"

@@ -1,4 +1,6 @@
 ---
-# Chạy toàn bộ vòng: triển khai -> hardening -> (chấm điểm chạy riêng bằng Python)
+# Chay toan bo vong khep kin: trien khai -> hardening -> thu thap + cham diem
+# Chay: ansible-playbook -i inventory/hosts.yml playbooks/site.yml
 - import_playbook: deploy.yml
 - import_playbook: harden.yml
+- import_playbook: compliance.yml

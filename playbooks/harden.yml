@@ -1,7 +1,10 @@
 ---
-# Tùng — chuẩn hóa an ninh theo CIS
-- name: Chuan hoa an ninh (hardening)
+# Tung — chuan hoa an ninh theo CIS
+# Chay: ansible-playbook -i inventory/hosts.yml playbooks/harden.yml
+- name: "HARDENING — Chuan hoa an ninh mang theo CIS"
   hosts: all
   gather_facts: false
+  collections:
+    - nokia.srlinux
   roles:
     - hardening

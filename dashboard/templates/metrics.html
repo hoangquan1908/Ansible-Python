@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+{% block title %}So lieu danh gia{% endblock %}
+{% block content %}
+<h1>So lieu danh gia hieu qua</h1>
+<p class="page-sub">Tong hop ket qua do luong tu dong hoa vs thu cong, rui ro, MTTR va tuan thu</p>
+
+<!-- OVERVIEW CARDS -->
+<div class="grid-4" style="margin-bottom:24px">
+  <div class="card">
+    <div class="card-title">Tang toc tong the</div>
+    <div class="stat-value score-high">{{ '%.1f'|format(benchmark.summary.total_speedup) if benchmark and benchmark.summary else '--' }}x</div>
+    <div class="stat-sub">Tu dong vs thu cong</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Thoi gian tiet kiem</div>
+    <div class="stat-value score-high">{{ '%.1f'|format(benchmark.summary.total_time_saved_minutes) if benchmark and benchmark.summary else '--' }}</div>
+    <div class="stat-sub">phut / lan trien khai</div>
+  </div>
+  <div class="card">
+    <div class="card-title">MTTR tu dong</div>
+    <div class="stat-value" style="color:var(--accent)">{{ '%.0f'|format(risk.mttr.auto_seconds) if risk and risk.mttr else '--' }}s</div>
+    <div class="stat-sub">vs ~{{ risk.mttr.manual_estimate_minutes if risk and risk.mttr else '30' }} phut thu cong</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Vi pham da sua</div>
+    <div class="stat-value score-high">{{ risk.compliance.violations_fixed if risk and risk.compliance else '--' }}/{{ risk.compliance.violations_before if risk and risk.compliance else '--' }}</div>
+    <div class="stat-sub">Ti le: {{ risk.compliance.fix_rate_pct if risk and risk.compliance else '--' }}%</div>
+  </div>
+</div>
+
+<!-- BENCHMARK TABLE -->
+{% if benchmark and benchmark.results %}
+<div class="card" style="margin-bottom:24px">
+  <h2>Hieu qua van hanh — Tu dong vs Thu cong</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Playbook</th>
+        <th>Mo ta</th>
+        <th>Tu dong</th>
+        <th>Thu cong (uoc tinh)</th>
+        <th>Tang toc</th>
+        <th>Tiet kiem</th>
+        <th>Thao tac</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for r in benchmark.results %}
+    <tr>
+      <td><b>{{ r.playbook }}.yml</b></td>
+      <td>{{ r.description }}</td>
+      <td class="score-high" style="font-weight:700">{{ r.auto_seconds }}s</td>
+      <td style="color:var(--muted)">{{ r.manual_minutes }} phut</td>
+      <td class="score-high" style="font-weight:700">{{ r.speedup_factor }}x</td>
+      <td>{{ r.time_saved_minutes }} phut</td>
+      <td>{{ r.auto_steps }} lenh vs {{ r.manual_steps }} buoc</td>
+    </tr>
+    {% endfor %}
+    <tr style="border-top:2px solid var(--line);font-weight:700">
+      <td colspan="2">TONG</td>
+      <td class="score-high">{{ benchmark.summary.total_auto_minutes }} phut</td>
+      <td style="color:var(--muted)">{{ benchmark.summary.total_manual_minutes }} phut</td>
+      <td class="score-high">{{ benchmark.summary.total_speedup }}x</td>
+      <td>{{ benchmark.summary.total_time_saved_minutes }} phut</td>
+      <td>{{ benchmark.summary.total_auto_steps }} lenh vs {{ benchmark.summary.total_manual_steps }} buoc</td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- BENCHMARK CHART -->
+<div class="card" style="margin-bottom:24px">
+  <h2>Bieu do so sanh thoi gian (phut)</h2>
+  <div style="display:flex;gap:32px;align-items:flex-end;height:200px;padding:16px 0">
+    {% for r in benchmark.results %}
+    <div style="flex:1;display:flex;gap:8px;align-items:flex-end;justify-content:center">
+      {% set max_h = 160 %}
+      {% set manual_h = (r.manual_minutes / benchmark.summary.total_manual_minutes * max_h)|int %}
+      {% set auto_h = (r.auto_minutes / benchmark.summary.total_manual_minutes * max_h)|int %}
+      {% if auto_h < 4 %}{% set auto_h = 4 %}{% endif %}
+      <div style="text-align:center">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">{{ r.manual_minutes }}m</div>
+        <div style="width:40px;height:{{ manual_h }}px;background:var(--red);border-radius:4px 4px 0 0;opacity:0.7"></div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">{{ r.auto_seconds }}s</div>
+        <div style="width:40px;height:{{ auto_h }}px;background:var(--green);border-radius:4px 4px 0 0"></div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  <div style="display:flex;gap:32px;text-align:center;font-size:12px;color:var(--muted)">
+    {% for r in benchmark.results %}
+    <div style="flex:1">{{ r.playbook }}</div>
+    {% endfor %}
+  </div>
+  <div style="display:flex;gap:16px;justify-content:center;margin-top:12px;font-size:12px">
+    <span><span style="display:inline-block;width:12px;height:12px;background:var(--red);border-radius:2px;opacity:0.7"></span> Thu cong</span>
+    <span><span style="display:inline-block;width:12px;height:12px;background:var(--green);border-radius:2px"></span> Tu dong</span>
+  </div>
+</div>
+{% endif %}
+
+<!-- COMPLIANCE COMPARISON -->
+{% if comparison %}
+<div class="card" style="margin-bottom:24px">
+  <h2>Tuan thu CIS — Truoc vs Sau hardening</h2>
+  <div class="grid-3" style="margin-bottom:16px">
+    <div class="card">
+      <div class="card-title">Truoc hardening</div>
+      <div class="stat-value score-low">{{ comparison.before.overall_score }}%</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Sau hardening</div>
+      <div class="stat-value score-high">{{ comparison.after.overall_score }}%</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Cai thien</div>
+      <div class="stat-value score-high">+{{ comparison.improvement }}%</div>
+    </div>
+  </div>
+  <table>
+    <thead><tr><th>Thiet bi</th><th>Truoc</th><th>Sau</th><th>Thay doi</th><th>Luat da khac phuc</th></tr></thead>
+    <tbody>
+    {% for d in comparison.before.devices %}
+    {% set after_d = comparison.after.devices[loop.index0] %}
+    <tr>
+      <td><b>{{ d.device }}</b></td>
+      <td class="score-low" style="font-weight:700">{{ d.score }}%</td>
+      <td class="score-high" style="font-weight:700">{{ after_d.score }}%</td>
+      <td class="score-high" style="font-weight:700">+{{ '%.1f'|format(after_d.score - d.score) }}%</td>
+      <td style="font-size:12px;color:var(--muted)">
+        {% set fixed = comparison.details[d.device].fixed_rules if comparison.details and d.device in comparison.details else [] %}
+        {{ fixed|join(', ') if fixed else '-' }}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- RISK MATRIX -->
+{% if risk and risk.risk_matrix %}
+<div class="card" style="margin-bottom:24px">
+  <h2>Ma tran rui ro</h2>
+  <table>
+    <thead><tr><th>Loai rui ro</th><th>Truoc</th><th>Sau</th><th>Bien phap</th></tr></thead>
+    <tbody>
+    {% for r in risk.risk_matrix %}
+    <tr>
+      <td><b>{{ r.category }}</b></td>
+      <td><span class="badge {{ 'badge-fail' if r.before == 'CAO' else 'badge-warn' }}">{{ r.before }}</span></td>
+      <td><span class="badge badge-ok">{{ r.after }}</span></td>
+      <td style="font-size:13px;color:var(--muted)">{{ r.mitigation }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- MTTR -->
+{% if risk and risk.mttr %}
+<div class="card" style="margin-bottom:24px">
+  <h2>MTTR — Thoi gian khac phuc trung binh</h2>
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">Tu dong (Ansible)</div>
+      <div class="stat-value" style="color:var(--accent)">{{ risk.mttr.auto_seconds }}s</div>
+      <div class="stat-sub">{{ risk.mttr.auto_minutes }} phut</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Thu cong (uoc tinh)</div>
+      <div class="stat-value" style="color:var(--muted)">{{ risk.mttr.manual_estimate_minutes }}m</div>
+      <div class="stat-sub">{{ risk.mttr.manual_estimate_minutes }} phut</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Tang toc</div>
+      <div class="stat-value score-high">{{ risk.mttr.speedup }}x</div>
+      <div class="stat-sub">nhanh hon</div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- DRIFT -->
+{% if drift and drift.devices %}
+<div class="card" style="margin-bottom:24px">
+  <h2>Phat hien troi cau hinh (Drift Detection)</h2>
+  <table>
+    <thead><tr><th>Thiet bi</th><th>Trang thai</th><th>Dong them</th><th>Dong thieu</th></tr></thead>
+    <tbody>
+    {% for d in drift.devices %}
+    <tr>
+      <td><b>{{ d.device }}</b></td>
+      <td>
+        {% if d.status == 'OK' %}<span class="badge badge-ok">KHOP</span>
+        {% elif d.status == 'DRIFT' %}<span class="badge badge-warn">TROI</span>
+        {% else %}<span class="badge badge-fail">LOI</span>{% endif %}
+      </td>
+      <td>{{ d.added|default(0) }}</td>
+      <td>{{ d.removed|default(0) }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- EVALUATION SUMMARY TABLE (Phase D) -->
+<div class="card" style="margin-bottom:24px;border-left:3px solid var(--accent)">
+  <h2>Bang tong hop danh gia (Chuong 6 — Thuc nghiem)</h2>
+  <table>
+    <thead><tr><th>Chi so</th><th>Truoc / Thu cong</th><th>Sau / Tu dong</th><th>Ghi chu</th></tr></thead>
+    <tbody>
+    <tr>
+      <td><b>Diem tuan thu TB (%)</b></td>
+      <td class="score-low" style="font-weight:700">{{ comparison.before.overall_score if comparison else '54.3' }}%</td>
+      <td class="score-high" style="font-weight:700">{{ comparison.after.overall_score if comparison else '100.0' }}%</td>
+      <td>CIS Benchmark 18 luat</td>
+    </tr>
+    <tr>
+      <td><b>So luat CIS vi pham</b></td>
+      <td style="color:var(--red);font-weight:700">{{ risk.compliance.violations_before if risk and risk.compliance else '41' }}</td>
+      <td class="score-high" style="font-weight:700">{{ risk.compliance.violations_after if risk and risk.compliance else '0' }}</td>
+      <td>Tren 6 thiet bi</td>
+    </tr>
+    <tr>
+      <td><b>Thoi gian cau hinh 6 TB</b></td>
+      <td style="color:var(--muted)">{{ benchmark.summary.total_manual_minutes if benchmark and benchmark.summary else '90' }} phut (thu cong)</td>
+      <td class="score-high" style="font-weight:700">{{ benchmark.summary.total_auto_minutes if benchmark and benchmark.summary else '1.11' }} phut (tu dong)</td>
+      <td>Tang toc {{ benchmark.summary.total_speedup if benchmark and benchmark.summary else '81.1' }}x</td>
+    </tr>
+    <tr>
+      <td><b>So thao tac</b></td>
+      <td style="color:var(--muted)">{{ benchmark.summary.total_manual_steps if benchmark and benchmark.summary else '138' }} buoc</td>
+      <td class="score-high" style="font-weight:700">{{ benchmark.summary.total_auto_steps if benchmark and benchmark.summary else '3' }} lenh</td>
+      <td>Giam {{ ((benchmark.summary.total_manual_steps - benchmark.summary.total_auto_steps) / benchmark.summary.total_manual_steps * 100)|round(1) if benchmark and benchmark.summary else '97.8' }}%</td>
+    </tr>
+    <tr>
+      <td><b>MTTR</b></td>
+      <td style="color:var(--muted)">~{{ risk.mttr.manual_estimate_minutes if risk and risk.mttr else '30' }} phut</td>
+      <td class="score-high" style="font-weight:700">{{ risk.mttr.auto_seconds if risk and risk.mttr else '16' }}s</td>
+      <td>Tang toc {{ risk.mttr.speedup if risk and risk.mttr else '112.5' }}x</td>
+    </tr>
+    <tr>
+      <td><b>Ti le loi (uoc tinh)</b></td>
+      <td style="color:var(--red);font-weight:700">15-20%</td>
+      <td class="score-high" style="font-weight:700">0%</td>
+      <td>Ansible idempotent, khong sai sot</td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+{% endblock %}

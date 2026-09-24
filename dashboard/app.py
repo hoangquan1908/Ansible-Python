@@ -175,6 +175,47 @@ def topology():
     return render_template("topology.html", sot=sot)
 
 
+@app.route("/metrics")
+def metrics():
+    reports_dir = REPO / "compliance" / "reports"
+    benchmark = {}
+    bpath = reports_dir / "benchmark.json"
+    if bpath.exists():
+        benchmark = json.loads(bpath.read_text(encoding="utf-8"))
+
+    risk = {}
+    rpath = reports_dir / "risk_assessment.json"
+    if rpath.exists():
+        risk = json.loads(rpath.read_text(encoding="utf-8"))
+
+    drift = {}
+    dpath = reports_dir / "drift_report.json"
+    if dpath.exists():
+        drift = json.loads(dpath.read_text(encoding="utf-8"))
+
+    comparison = {}
+    cpath = reports_dir / "comparison.json"
+    if cpath.exists():
+        comparison = json.loads(cpath.read_text(encoding="utf-8"))
+
+    return render_template("metrics.html",
+                           benchmark=benchmark,
+                           risk=risk,
+                           drift=drift,
+                           comparison=comparison)
+
+
+@app.route("/api/metrics")
+def api_metrics():
+    reports_dir = REPO / "compliance" / "reports"
+    data = {}
+    for name in ["benchmark", "risk_assessment", "drift_report", "comparison"]:
+        p = reports_dir / f"{name}.json"
+        if p.exists():
+            data[name] = json.loads(p.read_text(encoding="utf-8"))
+    return jsonify(data)
+
+
 @app.route("/devices")
 def devices():
     sot = load_sot()

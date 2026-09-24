@@ -15,12 +15,16 @@ vault-pass.txt
 .vault_pass
 secrets.yml
 
-# ------- Kết quả sinh tự động -------
+# ------- Ket qua sinh tu dong -------
 compliance/reports/*.html
 compliance/reports/*.json
 compliance/configs/live/*.cfg
-security/reports/*
+security/reports/*.json
+security/reports/*.html
 !**/.gitkeep
+
+# ------- Dashboard -------
+dashboard/*.db
 
 # ------- IDE / OS -------
 .vscode/
@@ -28,10 +32,10 @@ security/reports/*
 .DS_Store
 Thumbs.db
 
-# Ansible collections cài cục bộ
+# Ansible collections cai cuc bo
 collections/
 # Containerlab runtime
 lab/clab-*/
-# Bản sao lưu & cấu hình sinh tự động
-backups/
-compliance/configs/after/
+# Ban sao luu (sinh tu thiet bi)
+backups/*.cfg
+backups/*.json

@@ -49,7 +49,13 @@ case "${1:-help}" in
 
   ping)
     banner "KIEM TRA KET NOI (Ansible Ping)"
-    ansible_run -m ping -i inventory/hosts.yml all
+    python3 -c "
+import subprocess, sys
+r = subprocess.run(['ansible', 'all', '-m', 'ping', '-i', 'inventory/hosts.yml'], capture_output=True, text=True, timeout=60)
+print(r.stdout)
+if r.returncode != 0: print(r.stderr)
+sys.exit(r.returncode)
+"
     ;;
 
   deploy)
@@ -92,6 +98,23 @@ case "${1:-help}" in
       live)    python3 compliance/tools/score.py --sot sot/devices.yaml --policy compliance/policy/cis_rules.yaml --configs compliance/configs/live ;;
       compare) python3 compliance/tools/score.py --sot sot/devices.yaml --policy compliance/policy/cis_rules.yaml --compare compliance/configs/golden compliance/configs/after ;;
     esac
+    ;;
+
+  drift)
+    banner "KIEM TRA TROI CAU HINH (Drift Detection)"
+    shift || true
+    python3 scripts/drift_check.py "$@"
+    ;;
+
+  benchmark)
+    banner "DO HIEU QUA VAN HANH (Tu dong vs Thu cong)"
+    shift || true
+    python3 scripts/benchmark.py "$@"
+    ;;
+
+  risk)
+    banner "DANH GIA RUI RO & MTTR"
+    python3 scripts/risk_assessment.py
     ;;
 
   dashboard)
@@ -140,8 +163,11 @@ case "${1:-help}" in
     echo "  harden     Ap dung chuan hoa an ninh CIS"
     echo "  backup     Sao luu cau hinh thiet bi"
     echo "  all        Chay deploy + harden + backup"
+    echo "  drift      Phat hien troi cau hinh (--fix de khac phuc)"
     echo "  scan       Quet an ninh mang (nmap/python)"
     echo "  score      Cham diem tuan thu (golden|after|live|compare)"
+    echo "  benchmark  Do hieu qua van hanh (tu dong vs thu cong)"
+    echo "  risk       Danh gia rui ro & MTTR"
     echo "  dashboard  Khoi dong web dashboard (port 5000)"
     echo "  demo       Chay demo toan bo he thong"
     echo ""

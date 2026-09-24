@@ -1,10 +1,19 @@
 ---
-# Chung — triển khai cấu hình từ SoT xuống thiết bị
-- name: Trien khai cau hinh nen tang
+# Chung — trien khai cau hinh tu SoT xuong thiet bi
+# Chay: ansible-playbook -i inventory/hosts.yml playbooks/deploy.yml
+- name: "GIAI DOAN 1 — Cau hinh co ban va dinh tuyen"
   hosts: all
   gather_facts: false
+  collections:
+    - nokia.srlinux
   roles:
     - base_config
-    - vlan_port
     - routing
-    - backup_restore
+
+- name: "GIAI DOAN 2 — Cau hinh VLAN (chi leaf SR Linux co cong trunk)"
+  hosts: leaf1
+  gather_facts: false
+  collections:
+    - nokia.srlinux
+  roles:
+    - vlan_port
