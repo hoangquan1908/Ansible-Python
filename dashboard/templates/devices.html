@@ -61,16 +61,18 @@
   </table>
   {% endif %}
 
-  {% if device_details.get(dev.name) and device_details[dev.name].violations %}
+  {% if device_details.get(dev.name) and device_details[dev.name].n_violations %}
+  {# score.py luu ket qua tung luat trong 'results' (id, title, severity, passed, remediation) #}
   <h3 style="font-size:14px;margin:12px 0 6px;color:var(--red)">Vi pham ({{ device_details[dev.name].n_violations }})</h3>
   <table>
-    <thead><tr><th>Luat</th><th>Nhom</th><th>Trang thai</th></tr></thead>
+    <thead><tr><th>Luat</th><th>Muc</th><th>Yeu cau</th><th>Cach khac phuc</th></tr></thead>
     <tbody>
-    {% for v in device_details[dev.name].violations %}
+    {% for v in device_details[dev.name].results if not v.passed %}
     <tr>
-      <td>{{ v.rule_id }}</td>
-      <td>{{ v.group }}</td>
-      <td><span class="badge badge-fail">VI PHAM</span></td>
+      <td>{{ v.id }}</td>
+      <td><span class="badge badge-fail">{{ v.severity }}</span></td>
+      <td>{{ v.title }}</td>
+      <td style="font-size:13px;color:var(--muted)">{{ v.remediation }}</td>
     </tr>
     {% endfor %}
     </tbody>
