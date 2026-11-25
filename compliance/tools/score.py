@@ -3,7 +3,7 @@
 """
 CONG CU CHAM DIEM TUAN THU (Compliance Scoring) — v2.0
 =======================================================
-Phan viec cua Quan (Business Analyst / Compliance-as-Code).
+Phan viec cua Quan.
 
 Luong xu ly:
   1. Doc Nguon du lieu tin cay (SoT)  -> biet co nhung thiet bi nao.

@@ -2,7 +2,7 @@
 """
 WEB DASHBOARD — Giao dien quan ly tuan thu an ninh mang
 =======================================================
-Phan viec cua Quan (Business Analyst).
+Phan viec cua Quan.
 
 Chay:  python3 dashboard/app.py
 Truy cap: http://localhost:5000
