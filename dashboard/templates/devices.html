@@ -1,82 +1,111 @@
 {% extends "base.html" %}
-{% block title %}Thiet bi{% endblock %}
+{% block title %}Thiết bị{% endblock %}
 {% block content %}
-<h1>Danh sach thiet bi</h1>
-<p class="page-sub">{{ sot.devices|length }} thiet bi trong he thong — chi tiet cau hinh va diem tuan thu</p>
+{% macro sc(s) %}{{ 'score-high' if s >= 90 else 'score-mid' if s >= 70 else 'score-low' }}{% endmacro %}
+{% macro scol(s) %}{{ 'var(--green)' if s >= 90 else 'var(--yellow)' if s >= 70 else 'var(--red)' }}{% endmacro %}
 
-<div class="grid-2" style="margin-bottom:24px">
+<div class="page-head">
+  <div>
+    <h1>Danh sách thiết bị</h1>
+    <div class="page-sub">{{ sot.devices|length }} thiết bị khai báo trong SoT — thông số thiết kế và kết quả chấm của lần quét gần nhất</div>
+  </div>
+  <div class="legend">
+    <span><i style="background:var(--green)"></i>≥ 90%</span>
+    <span><i style="background:var(--yellow)"></i>≥ 70%</span>
+    <span><i style="background:var(--red)"></i>&lt; 70%</span>
+  </div>
+</div>
+
+<div class="grid-2">
 {% for dev in sot.devices %}
+{% set dd = device_details.get(dev.name) %}
 <div class="card">
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+  <!-- header -->
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:16px">
     <div>
-      <h2 style="margin-bottom:2px">{{ dev.name }}</h2>
-      <span class="badge badge-os">{{ dev.os }}</span>
-      <span style="color:var(--muted);font-size:13px;margin-left:8px">{{ dev.role }} · AS{{ dev.bgp.asn }}</span>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <h2 style="font-size:20px;font-weight:800">{{ dev.name }}</h2>
+        <span class="badge badge-os">{{ dev.os }}</span>
+        <span class="badge badge-muted">{{ dev.role }}</span>
+      </div>
+      <div class="small muted" style="margin-top:4px">AS{{ dev.bgp.asn }} · quản trị <code>{{ dev.mgmt_ip }}</code></div>
     </div>
-    {% if device_details.get(dev.name) %}
-    {% set dd = device_details[dev.name] %}
-    <div class="stat-value {{ 'score-high' if dd.score >= 90 else 'score-mid' if dd.score >= 70 else 'score-low' }}" style="font-size:28px">
-      {{ '%.1f'|format(dd.score) }}%
+    {% if dd %}
+    {% set pct = dd.score %}
+    <div style="position:relative;width:76px;height:76px;flex:none" title="{{ dd.earned }}/{{ dd.total }} điểm">
+      <svg viewBox="0 0 36 36" width="76" height="76" style="transform:rotate(-90deg)">
+        <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="3.2"/>
+        <circle cx="18" cy="18" r="15.9" fill="none" stroke="{{ scol(pct) }}" stroke-width="3.2" stroke-linecap="round"
+                stroke-dasharray="{{ '%.1f'|format(pct) }} 100"/>
+      </svg>
+      <div style="position:absolute;inset:0;display:grid;place-items:center;text-align:center">
+        <div><div class="{{ sc(pct) }}" style="font-weight:800;font-size:16px;line-height:1">{{ '%.1f'|format(pct) }}</div><div class="muted" style="font-size:10px">%</div></div>
+      </div>
     </div>
     {% else %}
-    <div class="stat-value" style="font-size:28px;color:var(--muted)">--</div>
+    <div style="width:76px;height:76px;border-radius:50%;border:3px solid rgba(255,255,255,.08);display:grid;place-items:center" class="muted">--</div>
     {% endif %}
   </div>
 
-  <table>
-    <tr><td style="color:var(--muted);width:120px">Management IP</td><td><code>{{ dev.mgmt_ip }}</code></td></tr>
-    <tr><td style="color:var(--muted)">Router ID</td><td><code>{{ dev.bgp.router_id }}</code></td></tr>
-    <tr><td style="color:var(--muted)">ASN</td><td>{{ dev.bgp.asn }}</td></tr>
-  </table>
+  {% if dd %}
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+    <span class="badge badge-muted">{{ dd.n_rules - dd.n_violations }}/{{ dd.n_rules }} luật đạt</span>
+    {% if dd.n_violations %}<span class="badge badge-fail">{{ dd.n_violations }} vi phạm</span>{% else %}<span class="badge badge-ok">Không vi phạm</span>{% endif %}
+    <span class="badge badge-muted">{{ dd.earned }}/{{ dd.total }} điểm trọng số</span>
+  </div>
+  {% endif %}
+
+  <dl class="kv" style="margin-bottom:14px">
+    <dt>Management IP</dt><dd><code>{{ dev.mgmt_ip }}</code></dd>
+    <dt>Router ID</dt><dd><code>{{ dev.bgp.router_id }}</code></dd>
+    <dt>ASN</dt><dd>{{ dev.bgp.asn }}</dd>
+  </dl>
 
   {% if dev.interfaces %}
-  <h3 style="font-size:14px;margin:12px 0 6px;color:var(--muted)">Interfaces</h3>
+  <div class="card-title" style="margin:6px 0 4px">Giao diện</div>
+  <div class="table-wrap">
   <table>
-    <thead><tr><th>Ten</th><th>IP</th><th>Mo ta</th></tr></thead>
+    <thead><tr><th>Tên</th><th>IPv4</th><th>Mô tả</th></tr></thead>
     <tbody>
     {% for iface in dev.interfaces %}
-    <tr>
-      <td><code>{{ iface.name }}</code></td>
-      <td>{{ iface.ipv4 | default('-') }}</td>
-      <td style="color:var(--muted)">{{ iface.description | default('') }}</td>
-    </tr>
+    <tr><td><code>{{ iface.name }}</code></td><td>{{ iface.ipv4 | default('-') }}</td><td class="muted">{{ iface.description | default('') }}</td></tr>
     {% endfor %}
     </tbody>
   </table>
+  </div>
   {% endif %}
 
   {% if dev.bgp.neighbors %}
-  <h3 style="font-size:14px;margin:12px 0 6px;color:var(--muted)">BGP Neighbors</h3>
+  <div class="card-title" style="margin:14px 0 4px">Láng giềng BGP</div>
+  <div class="table-wrap">
   <table>
-    <thead><tr><th>Neighbor</th><th>Remote AS</th><th>Mo ta</th></tr></thead>
+    <thead><tr><th>Neighbor</th><th class="num">Remote AS</th><th>Mô tả</th></tr></thead>
     <tbody>
     {% for n in dev.bgp.neighbors %}
-    <tr>
-      <td><code>{{ n.address }}</code></td>
-      <td>{{ n.remote_as }}</td>
-      <td style="color:var(--muted)">{{ n.description | default('') }}</td>
-    </tr>
+    <tr><td><code>{{ n.address }}</code></td><td class="num">{{ n.remote_as }}</td><td class="muted">{{ n.description | default('') }}</td></tr>
     {% endfor %}
     </tbody>
   </table>
+  </div>
   {% endif %}
 
-  {% if device_details.get(dev.name) and device_details[dev.name].n_violations %}
+  {% if dd and dd.n_violations %}
   {# score.py luu ket qua tung luat trong 'results' (id, title, severity, passed, remediation) #}
-  <h3 style="font-size:14px;margin:12px 0 6px;color:var(--red)">Vi pham ({{ device_details[dev.name].n_violations }})</h3>
-  <table>
-    <thead><tr><th>Luat</th><th>Muc</th><th>Yeu cau</th><th>Cach khac phuc</th></tr></thead>
-    <tbody>
-    {% for v in device_details[dev.name].results if not v.passed %}
-    <tr>
-      <td>{{ v.id }}</td>
-      <td><span class="badge badge-fail">{{ v.severity }}</span></td>
-      <td>{{ v.title }}</td>
-      <td style="font-size:13px;color:var(--muted)">{{ v.remediation }}</td>
-    </tr>
+  <div class="card-title" style="margin:16px 0 8px;color:#ff8a8a">Vi phạm ({{ dd.n_violations }})</div>
+  <div style="display:flex;flex-direction:column;gap:8px">
+    {% for v in dd.results if not v.passed %}
+    <div style="border:1px solid var(--line);border-left:3px solid {{ 'var(--red)' if v.severity == 'high' else 'var(--yellow)' if v.severity == 'medium' else 'var(--accent)' }};border-radius:10px;padding:9px 12px;background:rgba(255,255,255,.02)">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <b>{{ v.id }}</b>
+        <span class="badge sev-{{ v.severity }}">{{ v.severity }}</span>
+        <span style="color:var(--fg-2)">{{ v.title }}</span>
+      </div>
+      <div class="small muted" style="margin-top:3px">Khắc phục: {{ v.remediation }}</div>
+    </div>
     {% endfor %}
-    </tbody>
-  </table>
+  </div>
+  {% elif not dd %}
+  <div class="empty" style="margin-top:14px;padding:14px">Chưa có kết quả chấm cho thiết bị này</div>
   {% endif %}
 </div>
 {% endfor %}

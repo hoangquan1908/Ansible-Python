@@ -1,170 +1,231 @@
 {% extends "base.html" %}
-{% block title %}Tong quan{% endblock %}
+{% block title %}Tổng quan{% endblock %}
 {% block content %}
-<h1>Kiem soat tuan thu an ninh mang</h1>
-<p class="page-sub">Do an tot nghiep — Tu dong hoa cau hinh va kiem soat tuan thu an ninh mang</p>
+{% macro sc(s) %}{{ 'score-high' if s >= 90 else 'score-mid' if s >= 70 else 'score-low' }}{% endmacro %}
+{% macro sbg(s) %}{{ 'bg-high' if s >= 90 else 'bg-mid' if s >= 70 else 'bg-low' }}{% endmacro %}
+{% macro tone(s) %}{{ 'tone-green' if s >= 90 else 'tone-yellow' if s >= 70 else 'tone-red' }}{% endmacro %}
+
+<div class="page-head">
+  <div>
+    <h1>Kiểm soát tuân thủ an ninh mạng</h1>
+    <div class="page-sub">Tự động hóa cấu hình và kiểm soát tuân thủ an ninh mạng sử dụng Ansible và Python</div>
+  </div>
+  {% if latest %}
+  <div class="small muted">Lần quét gần nhất: <b style="color:var(--fg-2)">{{ latest.scanned_at[:16] }}</b> · nguồn <span class="badge badge-os">{{ latest.config_source }}</span></div>
+  {% endif %}
+</div>
 
 <!-- STAT CARDS -->
-<div class="grid-4" style="margin-bottom:24px">
-  <div class="card">
-    <div class="card-title">Diem tuan thu</div>
-    <div class="stat-value {{ 'score-high' if latest and latest.overall_score >= 90 else 'score-mid' if latest and latest.overall_score >= 70 else 'score-low' }}">
-      {{ '%.1f'|format(latest.overall_score) if latest else '--' }}%
+<div class="grid-4 section">
+  <div class="card stat {{ tone(latest.overall_score) if latest else 'tone-blue' }}">
+    <div class="stat-head">
+      <div class="card-title">Điểm tuân thủ</div>
+      <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6l8-3z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg></div>
     </div>
-    <div class="stat-sub">Toan he thong</div>
+    <div class="stat-value {{ sc(latest.overall_score) if latest else '' }}">{{ '%.1f'|format(latest.overall_score) if latest else '--' }}<span class="stat-unit">%</span></div>
+    {% if latest %}<div class="meter sm" style="margin-top:10px"><span class="{{ sbg(latest.overall_score) }}" style="width:{{ latest.overall_score }}%"></span></div>{% endif %}
+    <div class="stat-sub">Toàn hệ thống (Σ đạt / Σ tối đa)</div>
   </div>
-  <div class="card">
-    <div class="card-title">Thiet bi</div>
+  <div class="card stat tone-blue">
+    <div class="stat-head">
+      <div class="card-title">Thiết bị</div>
+      <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/><path d="M7 7h.01M7 17h.01"/></svg></div>
+    </div>
     <div class="stat-value">{{ sot.devices|length }}</div>
-    <div class="stat-sub">{{ sot.devices|selectattr('os','eq','srlinux')|list|length }} SR Linux · {{ sot.devices|selectattr('os','eq','frr')|list|length }} FRR</div>
+    <div class="stat-sub">{{ sot.devices|selectattr('os','eq','srlinux')|list|length }} SR Linux · {{ sot.devices|selectattr('os','eq','frr')|list|length }} FRRouting</div>
   </div>
-  <div class="card">
-    <div class="card-title">Luat CIS</div>
+  <div class="card stat tone-purple">
+    <div class="stat-head">
+      <div class="card-title">Luật CIS</div>
+      <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg></div>
+    </div>
     <div class="stat-value">{{ policy_stats.n_rules }}</div>
-    <div class="stat-sub">{{ policy_stats.n_groups }} nhom kiem soat{% for os_name, n in policy_stats.per_os.items() %} · {{ os_name }} {{ n }}{% endfor %}</div>
+    <div class="stat-sub">{{ policy_stats.n_groups }} nhóm kiểm soát{% for os_name, n in policy_stats.per_os.items() %} · {{ os_name }} {{ n }}{% endfor %}</div>
   </div>
-  <div class="card">
-    <div class="card-title">Lan quet</div>
+  <div class="card stat tone-blue">
+    <div class="stat-head">
+      <div class="card-title">Lần quét</div>
+      <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+    </div>
     <div class="stat-value">{{ total_scans }}</div>
-    <div class="stat-sub">{% if latest %}Lan cuoi: {{ latest.scanned_at[:16] }}{% else %}Chua co{% endif %}</div>
+    <div class="stat-sub">{% if latest %}Lần cuối: {{ latest.scanned_at[:16] }}{% else %}Chưa có lần quét nào{% endif %}</div>
   </div>
 </div>
 
 <!-- ACTIONS -->
-{% set sel_style = "padding:9px 12px;border-radius:8px;background:var(--card);color:var(--fg);border:1px solid var(--line);font-size:14px" %}
-<div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
-  <span style="color:var(--muted);min-width:90px">Quet cau hinh</span>
-  <select id="scanDir" style="{{ sel_style }}">
-    {% for d in config_dirs %}<option value="{{ d }}" {{ 'selected' if d == 'golden' }}>{{ d }}</option>{% endfor %}
-  </select>
-  <button class="btn btn-primary" onclick="runScan(document.getElementById('scanDir').value)">Quet</button>
-</div>
-<div style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap;align-items:center">
-  <span style="color:var(--muted);min-width:90px">So sanh</span>
-  <select id="cmpBefore" style="{{ sel_style }}">
-    {% for d in config_dirs %}<option value="{{ d }}" {{ 'selected' if d == 'golden' }}>{{ d }}</option>{% endfor %}
-  </select>
-  <span>&rarr;</span>
-  <select id="cmpAfter" style="{{ sel_style }}">
-    {% for d in config_dirs %}<option value="{{ d }}" {{ 'selected' if d == 'after' }}>{{ d }}</option>{% endfor %}
-  </select>
-  <button class="btn btn-secondary" onclick="runCompare()">So sanh</button>
-</div>
-
-<!-- DEVICE SCORES -->
-{% if device_scores %}
-<div class="card" style="margin-bottom:24px">
-  <h2>Diem theo thiet bi</h2>
-  <div class="chart-bars" id="deviceChart">
-    {% for d in device_scores %}
-    <div style="flex:1;text-align:center">
-      <div class="chart-bar" style="height:{{ (d.score * 0.8)|int }}px;background:{{ 'var(--green)' if d.score >= 90 else 'var(--yellow)' if d.score >= 70 else 'var(--red)' }};" title="{{ d.device }}: {{ d.score }}%"></div>
-      <div class="chart-label">{{ d.device }}<br>{{ '%.0f'|format(d.score) }}%</div>
+<div class="card section">
+  <div class="section-title">
+    <h2>Chấm điểm tuân thủ</h2>
+    <span class="hint">Danh sách lấy từ các thư mục trong <code>compliance/configs/</code></span>
+  </div>
+  <div class="toolbar">
+    <div class="label">Quét cấu hình</div>
+    <div class="controls">
+      <select id="scanDir" aria-label="Thư mục cấu hình cần quét">
+        {% for d in config_dirs %}<option value="{{ d }}" {{ 'selected' if d == 'golden' }}>{{ d }}</option>{% endfor %}
+      </select>
+      <button class="btn btn-primary" onclick="runScan(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>Quét</button>
     </div>
-    {% endfor %}
+    <div class="label">So sánh</div>
+    <div class="controls">
+      <select id="cmpBefore" aria-label="Cấu hình trước">
+        {% for d in config_dirs %}<option value="{{ d }}" {{ 'selected' if d == 'golden' }}>{{ d }}</option>{% endfor %}
+      </select>
+      <span class="arrow">→</span>
+      <select id="cmpAfter" aria-label="Cấu hình sau">
+        {% for d in config_dirs %}<option value="{{ d }}" {{ 'selected' if d == 'after' }}>{{ d }}</option>{% endfor %}
+      </select>
+      <button class="btn btn-secondary" onclick="runCompare(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h13M16 3l4 4-4 4M17 17H4M8 13l-4 4 4 4"/></svg>So sánh</button>
+    </div>
   </div>
 </div>
 
-<div class="card" style="margin-bottom:24px">
-  <h2>Chi tiet thiet bi</h2>
-  <table>
-    <thead><tr><th>Thiet bi</th><th>Nen tang</th><th>Vai tro</th><th>Diem</th><th>Luat dat</th><th>Vi pham</th><th>Trang thai</th></tr></thead>
-    <tbody>
-    {% for d in device_scores %}
-    <tr>
-      <td><b>{{ d.device }}</b></td>
-      <td><span class="badge badge-os">{{ d.os }}</span></td>
-      <td>{{ d.role }}</td>
-      <td class="{{ 'score-high' if d.score >= 90 else 'score-mid' if d.score >= 70 else 'score-low' }}" style="font-weight:700">{{ '%.1f'|format(d.score) }}%</td>
-      <td>{{ d.n_rules - d.n_violations }}/{{ d.n_rules }}</td>
-      <td>{{ d.n_violations }}</td>
-      <td>
-        {% if d.n_violations == 0 %}<span class="badge badge-ok">DAT CHUAN</span>
-        {% elif d.score >= 70 %}<span class="badge badge-warn">CAN HARDENING</span>
-        {% else %}<span class="badge badge-fail">NGUY CO</span>{% endif %}
-      </td>
-    </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-</div>
-{% endif %}
-
 <!-- COMPARISON RESULT -->
-<div id="compareResult" class="card hidden" style="margin-bottom:24px;border-left:3px solid var(--green)">
-  <h2 id="compareTitle">Ket qua so sanh</h2>
+<div id="compareResult" class="card section hidden" style="border-color:rgba(79,140,255,.45)">
+  <div class="section-title">
+    <h2 id="compareTitle">Kết quả so sánh</h2>
+    <span class="hint">Chỉ hiển thị, không lưu vào lịch sử</span>
+  </div>
   <div id="compareContent"></div>
 </div>
 
+{% if device_scores %}
+<!-- DEVICE SCORES -->
+<div class="grid-2 section" style="grid-template-columns: minmax(0,5fr) minmax(0,7fr)">
+  <div class="card">
+    <div class="section-title">
+      <h2>Điểm theo thiết bị</h2>
+      <div class="legend"><span><i style="background:var(--green)"></i>≥ 90</span><span><i style="background:var(--yellow)"></i>≥ 70</span><span><i style="background:var(--red)"></i>&lt; 70</span></div>
+    </div>
+    <div style="position:relative;height:210px;margin:6px 4px 0 30px;border-left:1px solid var(--line-2);border-bottom:1px solid var(--line-2)">
+      {% for y in [100, 90, 70, 50] %}
+      <div style="position:absolute;left:0;right:0;bottom:{{ y }}%;border-top:1px {{ 'dashed' if y in [70, 90] else 'solid' }} {{ 'rgba(245,179,1,.35)' if y == 70 else 'rgba(34,197,94,.35)' if y == 90 else 'rgba(255,255,255,.05)' }}"></div>
+      <div style="position:absolute;left:-30px;bottom:calc({{ y }}% - 8px);width:24px;text-align:right;font-size:11px;color:var(--muted)">{{ y }}</div>
+      {% endfor %}
+      <div style="position:absolute;inset:0;display:flex;align-items:flex-end;gap:14px;padding:0 12px">
+        {% for d in device_scores %}
+        <div style="flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center" title="{{ d.device }}: {{ d.score }}%">
+          <div style="font-size:11.5px;font-weight:700;margin-bottom:4px" class="{{ sc(d.score) }}">{{ '%.0f'|format(d.score) }}%</div>
+          <div class="{{ sbg(d.score) }}" style="width:100%;max-width:46px;height:{{ d.score }}%;border-radius:6px 6px 0 0;opacity:.9"></div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div style="display:flex;gap:14px;padding:6px 12px 0 42px">
+      {% for d in device_scores %}<div style="flex:1;text-align:center;font-size:12px;color:var(--fg-2);font-weight:600">{{ d.device }}</div>{% endfor %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">
+      <h2>Chi tiết thiết bị</h2>
+      <a class="small" href="/devices">Xem vi phạm →</a>
+    </div>
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Thiết bị</th><th>Nền tảng</th><th>Điểm</th><th class="num">Luật đạt</th><th class="num">Vi phạm</th><th>Trạng thái</th></tr></thead>
+      <tbody>
+      {% for d in device_scores %}
+      <tr>
+        <td><b>{{ d.device }}</b><div class="small muted">{{ d.role }}</div></td>
+        <td><span class="badge badge-os">{{ d.os }}</span></td>
+        <td><div class="meter-row" style="min-width:120px"><b class="{{ sc(d.score) }}" style="min-width:48px">{{ '%.1f'|format(d.score) }}%</b><div class="meter sm"><span class="{{ sbg(d.score) }}" style="width:{{ d.score }}%"></span></div></div></td>
+        <td class="num">{{ d.n_rules - d.n_violations }}/{{ d.n_rules }}</td>
+        <td class="num">{{ d.n_violations }}</td>
+        <td>
+          {% if d.n_violations == 0 %}<span class="badge badge-ok">ĐẠT CHUẨN</span>
+          {% elif d.score >= 70 %}<span class="badge badge-warn">CẦN HARDENING</span>
+          {% else %}<span class="badge badge-fail">NGUY CƠ</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="card section"><div class="empty">Chưa có lần quét nào. Chọn một thư mục cấu hình và bấm <b>Quét</b>.</div></div>
+{% endif %}
+
 <!-- HISTORY -->
 {% if history %}
-<div class="card">
-  <h2>Lich su quet</h2>
+<div class="card section">
+  <div class="section-title">
+    <h2>Lịch sử quét</h2>
+    <span class="hint">20 lần gần nhất / tổng {{ total_scans }} lần</span>
+  </div>
+  <div class="table-wrap">
   <table>
-    <thead><tr><th>#</th><th>Thoi gian</th><th>Nguon</th><th>Diem</th><th>So thiet bi</th></tr></thead>
+    <thead><tr><th>#</th><th>Thời gian</th><th>Nguồn cấu hình</th><th>Điểm</th><th class="num">Số thiết bị</th></tr></thead>
     <tbody>
     {% for h in history %}
     <tr>
-      <td>{{ h.id }}</td>
+      <td class="muted">{{ h.id }}</td>
       <td>{{ h.scanned_at }}</td>
       <td><span class="badge badge-os">{{ h.config_source }}</span></td>
-      <td class="{{ 'score-high' if h.overall_score >= 90 else 'score-mid' if h.overall_score >= 70 else 'score-low' }}" style="font-weight:700">{{ '%.1f'|format(h.overall_score) }}%</td>
-      <td>{{ h.n_devices }}</td>
+      <td><div class="meter-row" style="max-width:260px"><b class="{{ sc(h.overall_score) }}" style="min-width:48px">{{ '%.1f'|format(h.overall_score) }}%</b><div class="meter sm"><span class="{{ sbg(h.overall_score) }}" style="width:{{ h.overall_score }}%"></span></div></div></td>
+      <td class="num">{{ h.n_devices }}</td>
     </tr>
     {% endfor %}
     </tbody>
   </table>
+  </div>
 </div>
 {% endif %}
 {% endblock %}
 
 {% block scripts %}
 <script>
-async function runScan(dir) {
-  const btn = event.target;
-  const label = btn.textContent;
-  btn.disabled = true; btn.textContent = 'Dang quet...';
-  try {
-    const r = await fetch('/api/scan', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({config_dir: dir})});
-    const d = await r.json();
-    if (d.error) { alert(d.error); return; }
-    alert(`Quet xong! Diem: ${d.overall_score}% (${d.devices} thiet bi)`);
-    location.reload();
-  } catch(e) { alert('Loi: ' + e); }
-  finally { btn.disabled = false; btn.textContent = label; }
-}
-
 function deltaClass(v) { return v > 0 ? 'score-high' : v < 0 ? 'score-low' : ''; }
 function deltaText(v) { return (v > 0 ? '+' : '') + Number(v).toFixed(1); }
 
-async function runCompare() {
-  const btn = event.target;
-  const label = btn.textContent;
+async function runScan(btn) {
+  const dir = document.getElementById('scanDir').value;
+  const label = btn.innerHTML;
+  btn.disabled = true; btn.textContent = 'Đang quét...';
+  try {
+    const r = await fetch('/api/scan', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({config_dir: dir})});
+    const d = await r.json();
+    if (d.error) { toast(d.error, 'err'); return; }
+    toast(`Quét xong ${dir}: ${d.overall_score}% (${d.devices} thiết bị)`, 'ok');
+    setTimeout(() => location.reload(), 700);
+  } catch(e) { toast('Lỗi: ' + e, 'err'); }
+  finally { btn.disabled = false; btn.innerHTML = label; }
+}
+
+async function runCompare(btn) {
+  const label = btn.innerHTML;
   const before = document.getElementById('cmpBefore').value;
   const after = document.getElementById('cmpAfter').value;
-  btn.disabled = true; btn.textContent = 'Dang so sanh...';
+  btn.disabled = true; btn.textContent = 'Đang so sánh...';
   try {
     const r = await fetch('/api/compare', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({before: before, after: after})});
     const d = await r.json();
-    if (d.error) { alert(d.error); return; }
-    document.getElementById('compareTitle').textContent = `Ket qua so sanh: ${d.before_dir} \u2192 ${d.after_dir}`;
+    if (d.error) { toast(d.error, 'err'); return; }
+    document.getElementById('compareTitle').textContent = `Kết quả so sánh: ${d.before_dir} → ${d.after_dir}`;
     let html = `<div class="grid-3" style="margin-bottom:16px">
-      <div class="card"><div class="card-title">Truoc</div><div class="stat-value ${scoreClass(d.before.score)}">${d.before.score}%</div></div>
-      <div class="card"><div class="card-title">Sau</div><div class="stat-value ${scoreClass(d.after.score)}">${d.after.score}%</div></div>
-      <div class="card"><div class="card-title">Cai thien</div><div class="stat-value ${deltaClass(d.improvement)}">${deltaText(d.improvement)}%</div></div>
-    </div><table><thead><tr><th>Thiet bi</th><th>Truoc</th><th>Sau</th><th>Thay doi</th></tr></thead><tbody>`;
+      <div class="card flat"><div class="card-title">Trước · ${d.before_dir}</div><div class="stat-value ${scoreClass(d.before.score)}">${d.before.score}<span class="stat-unit">%</span></div></div>
+      <div class="card flat"><div class="card-title">Sau · ${d.after_dir}</div><div class="stat-value ${scoreClass(d.after.score)}">${d.after.score}<span class="stat-unit">%</span></div></div>
+      <div class="card flat"><div class="card-title">Thay đổi</div><div class="stat-value ${deltaClass(d.improvement)}">${deltaText(d.improvement)}<span class="stat-unit">%</span></div></div>
+    </div><div class="table-wrap"><table><thead><tr><th>Thiết bị</th><th>Trước</th><th>Sau</th><th class="num">Thay đổi</th></tr></thead><tbody>`;
     const afterByName = Object.fromEntries(d.after.devices.map(x => [x.device, x]));
     for (const b of d.before.devices) {
       const a = afterByName[b.device];
       if (!a) continue;
       const diff = a.score - b.score;
-      html += `<tr><td><b>${b.device}</b></td><td class="${scoreClass(b.score)}" style="font-weight:700">${b.score}%</td><td class="${scoreClass(a.score)}" style="font-weight:700">${a.score}%</td><td class="${deltaClass(diff)}" style="font-weight:700">${deltaText(diff)}%</td></tr>`;
+      const cell = s => `<div class="meter-row"><b class="${scoreClass(s)}" style="min-width:48px">${s}%</b><div class="meter sm"><span class="${scoreBg(s)}" style="width:${s}%"></span></div></div>`;
+      html += `<tr><td><b>${b.device}</b></td><td>${cell(b.score)}</td><td>${cell(a.score)}</td><td class="num ${deltaClass(diff)}" style="font-weight:800">${deltaText(diff)}%</td></tr>`;
     }
-    html += '</tbody></table>';
+    html += '</tbody></table></div>';
     document.getElementById('compareContent').innerHTML = html;
-    document.getElementById('compareResult').classList.remove('hidden');
-  } catch(e) { alert('Loi: ' + e); }
-  finally { btn.disabled = false; btn.textContent = label; }
+    const box = document.getElementById('compareResult');
+    box.classList.remove('hidden');
+    box.scrollIntoView({behavior: 'smooth', block: 'start'});
+  } catch(e) { toast('Lỗi: ' + e, 'err'); }
+  finally { btn.disabled = false; btn.innerHTML = label; }
 }
 </script>
 {% endblock %}
