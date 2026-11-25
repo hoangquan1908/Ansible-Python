@@ -15,6 +15,7 @@ import datetime as dt
 import json
 import time
 import subprocess
+import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
@@ -36,7 +37,12 @@ def measure_mttr() -> float:
         capture_output=True, text=True, timeout=600,
         cwd=str(REPO),
     )
-    return round(time.time() - start, 1)
+    elapsed = round(time.time() - start, 1)
+    if r.returncode != 0:
+        print(f"    [!] harden.yml that bai (ma loi {r.returncode}) - KHONG ghi MTTR")
+        print((r.stdout + r.stderr)[-800:])
+        sys.exit(1)
+    return elapsed
 
 
 def main():

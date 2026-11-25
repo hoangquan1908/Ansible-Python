@@ -88,6 +88,11 @@ def load_sot():
         return yaml.safe_load(f)
 
 
+def list_config_dirs() -> list:
+    base = COMPLIANCE / "configs"
+    return sorted(p.name for p in base.iterdir() if p.is_dir() and any(p.glob("*.cfg")))
+
+
 def load_policy_stats(os_names) -> dict:
     policy = load_yaml(COMPLIANCE / "policy" / "cis_rules.yaml")
     rules = policy.get("rules", [])
@@ -119,6 +124,7 @@ def index():
     sot = load_sot()
     policy_stats = load_policy_stats(sorted({d["os"] for d in sot["devices"]}))
     return render_template("index.html",
+                           config_dirs=list_config_dirs(),
                            latest=latest,
                            history=history,
                            device_scores=device_scores,
@@ -129,10 +135,12 @@ def index():
 
 @app.route("/api/scan", methods=["POST"])
 def api_scan():
-    config_dir = request.json.get("config_dir", "golden")
+    data = request.get_json(silent=True) or {}
+    config_dir = data.get("config_dir", "golden")
+    allowed = list_config_dirs()
+    if config_dir not in allowed:
+        return jsonify({"error": f"Thu muc '{config_dir}' khong hop le. Chon mot trong: {', '.join(allowed)}"}), 400
     configs_path = COMPLIANCE / "configs" / config_dir
-    if not configs_path.exists():
-        return jsonify({"error": f"Thu muc {configs_path} khong ton tai"}), 400
     sot_path = REPO / "sot" / "devices.yaml"
     policy_path = COMPLIANCE / "policy" / "cis_rules.yaml"
     report = run_scoring(str(sot_path), str(policy_path), str(configs_path))
@@ -143,8 +151,13 @@ def api_scan():
 
 @app.route("/api/compare", methods=["POST"])
 def api_compare():
-    before_dir = request.json.get("before", "golden")
-    after_dir = request.json.get("after", "after")
+    data = request.get_json(silent=True) or {}
+    before_dir = data.get("before", "golden")
+    after_dir = data.get("after", "after")
+    allowed = list_config_dirs()
+    for name in (before_dir, after_dir):
+        if name not in allowed:
+            return jsonify({"error": f"Thu muc '{name}' khong hop le. Chon mot trong: {', '.join(allowed)}"}), 400
     sot_path = REPO / "sot" / "devices.yaml"
     policy_path = COMPLIANCE / "policy" / "cis_rules.yaml"
     before = run_scoring(str(sot_path), str(policy_path), str(COMPLIANCE / "configs" / before_dir))
@@ -152,7 +165,9 @@ def api_compare():
     return jsonify({
         "before": {"score": before["overall_score"], "devices": before["devices"]},
         "after": {"score": after["overall_score"], "devices": after["devices"]},
-        "improvement": round(after["overall_score"] - before["overall_score"], 1)
+        "improvement": round(after["overall_score"] - before["overall_score"], 1),
+        "before_dir": before_dir,
+        "after_dir": after_dir,
     })
 
 

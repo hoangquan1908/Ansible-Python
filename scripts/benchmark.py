@@ -17,6 +17,7 @@ import datetime as dt
 import json
 import subprocess
 import time
+import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
@@ -68,6 +69,7 @@ def run_playbook(name: str) -> dict:
         "success": r.returncode == 0,
         "tasks_run": ok_count,
         "returncode": r.returncode,
+        "log_tail": (r.stdout + r.stderr)[-800:],
     }
 
 
@@ -91,6 +93,11 @@ def main():
     for pb in playbooks:
         print(f"\n[*] Chay {pb}.yml ...")
         auto = run_playbook(pb)
+        auto = run_playbook(pb)
+        if not auto["success"]:
+            print(f"    [!] {pb}.yml that bai (ma loi {auto['returncode']}) - dung, KHONG ghi benchmark.json")
+            print(auto["log_tail"])
+            sys.exit(1)
         manual = MANUAL_ESTIMATES[pb]
 
         auto_min = auto["auto_minutes"]

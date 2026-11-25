@@ -31,10 +31,24 @@
 </div>
 
 <!-- ACTIONS -->
-<div style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap">
-  <button class="btn btn-primary" onclick="runScan('golden')">Quet truoc hardening</button>
-  <button class="btn btn-primary" onclick="runScan('after')">Quet sau hardening</button>
-  <button class="btn btn-secondary" onclick="runCompare()">So sanh truoc/sau</button>
+{% set sel_style = "padding:9px 12px;border-radius:8px;background:var(--card);color:var(--fg);border:1px solid var(--line);font-size:14px" %}
+<div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+  <span style="color:var(--muted);min-width:90px">Quet cau hinh</span>
+  <select id="scanDir" style="{{ sel_style }}">
+    {% for d in config_dirs %}<option value="{{ d }}" {{ 'selected' if d == 'golden' }}>{{ d }}</option>{% endfor %}
+  </select>
+  <button class="btn btn-primary" onclick="runScan(document.getElementById('scanDir').value)">Quet</button>
+</div>
+<div style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap;align-items:center">
+  <span style="color:var(--muted);min-width:90px">So sanh</span>
+  <select id="cmpBefore" style="{{ sel_style }}">
+    {% for d in config_dirs %}<option value="{{ d }}" {{ 'selected' if d == 'golden' }}>{{ d }}</option>{% endfor %}
+  </select>
+  <span>&rarr;</span>
+  <select id="cmpAfter" style="{{ sel_style }}">
+    {% for d in config_dirs %}<option value="{{ d }}" {{ 'selected' if d == 'after' }}>{{ d }}</option>{% endfor %}
+  </select>
+  <button class="btn btn-secondary" onclick="runCompare()">So sanh</button>
 </div>
 
 <!-- DEVICE SCORES -->
@@ -44,7 +58,7 @@
   <div class="chart-bars" id="deviceChart">
     {% for d in device_scores %}
     <div style="flex:1;text-align:center">
-      <div class="chart-bar" style="height:{{ d.score }}%;background:{{ 'var(--green)' if d.score >= 90 else 'var(--yellow)' if d.score >= 70 else 'var(--red)' }};" title="{{ d.device }}: {{ d.score }}%"></div>
+      <div class="chart-bar" style="height:{{ (d.score * 0.8)|int }}px;background:{{ 'var(--green)' if d.score >= 90 else 'var(--yellow)' if d.score >= 70 else 'var(--red)' }};" title="{{ d.device }}: {{ d.score }}%"></div>
       <div class="chart-label">{{ d.device }}<br>{{ '%.0f'|format(d.score) }}%</div>
     </div>
     {% endfor %}
@@ -78,7 +92,7 @@
 
 <!-- COMPARISON RESULT -->
 <div id="compareResult" class="card hidden" style="margin-bottom:24px;border-left:3px solid var(--green)">
-  <h2>Ket qua so sanh truoc / sau hardening</h2>
+  <h2 id="compareTitle">Ket qua so sanh</h2>
   <div id="compareContent"></div>
 </div>
 
@@ -108,6 +122,7 @@
 <script>
 async function runScan(dir) {
   const btn = event.target;
+  const label = btn.textContent;
   btn.disabled = true; btn.textContent = 'Dang quet...';
   try {
     const r = await fetch('/api/scan', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({config_dir: dir})});
@@ -116,7 +131,7 @@ async function runScan(dir) {
     alert(`Quet xong! Diem: ${d.overall_score}% (${d.devices} thiet bi)`);
     location.reload();
   } catch(e) { alert('Loi: ' + e); }
-  finally { btn.disabled = false; btn.textContent = dir === 'golden' ? 'Quet truoc hardening' : 'Quet sau hardening'; }
+  finally { btn.disabled = false; btn.textContent = label; }
 }
 
 function deltaClass(v) { return v > 0 ? 'score-high' : v < 0 ? 'score-low' : ''; }
@@ -124,17 +139,24 @@ function deltaText(v) { return (v > 0 ? '+' : '') + Number(v).toFixed(1); }
 
 async function runCompare() {
   const btn = event.target;
+  const label = btn.textContent;
+  const before = document.getElementById('cmpBefore').value;
+  const after = document.getElementById('cmpAfter').value;
   btn.disabled = true; btn.textContent = 'Dang so sanh...';
   try {
-    const r = await fetch('/api/compare', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({before:'golden', after:'after'})});
+    const r = await fetch('/api/compare', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({before: before, after: after})});
     const d = await r.json();
+    if (d.error) { alert(d.error); return; }
+    document.getElementById('compareTitle').textContent = `Ket qua so sanh: ${d.before_dir} \u2192 ${d.after_dir}`;
     let html = `<div class="grid-3" style="margin-bottom:16px">
       <div class="card"><div class="card-title">Truoc</div><div class="stat-value ${scoreClass(d.before.score)}">${d.before.score}%</div></div>
       <div class="card"><div class="card-title">Sau</div><div class="stat-value ${scoreClass(d.after.score)}">${d.after.score}%</div></div>
       <div class="card"><div class="card-title">Cai thien</div><div class="stat-value ${deltaClass(d.improvement)}">${deltaText(d.improvement)}%</div></div>
     </div><table><thead><tr><th>Thiet bi</th><th>Truoc</th><th>Sau</th><th>Thay doi</th></tr></thead><tbody>`;
-    for (let i = 0; i < d.before.devices.length; i++) {
-      const b = d.before.devices[i], a = d.after.devices[i];
+    const afterByName = Object.fromEntries(d.after.devices.map(x => [x.device, x]));
+    for (const b of d.before.devices) {
+      const a = afterByName[b.device];
+      if (!a) continue;
       const diff = a.score - b.score;
       html += `<tr><td><b>${b.device}</b></td><td class="${scoreClass(b.score)}" style="font-weight:700">${b.score}%</td><td class="${scoreClass(a.score)}" style="font-weight:700">${a.score}%</td><td class="${deltaClass(diff)}" style="font-weight:700">${deltaText(diff)}%</td></tr>`;
     }
@@ -142,7 +164,7 @@ async function runCompare() {
     document.getElementById('compareContent').innerHTML = html;
     document.getElementById('compareResult').classList.remove('hidden');
   } catch(e) { alert('Loi: ' + e); }
-  finally { btn.disabled = false; btn.textContent = 'So sanh truoc/sau'; }
+  finally { btn.disabled = false; btn.textContent = label; }
 }
 </script>
 {% endblock %}
