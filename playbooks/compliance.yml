@@ -1,5 +1,4 @@
 ---
-# Quan — thu thap cau hinh thuc te va cham diem tuan thu
 # Chay: ansible-playbook -i inventory/hosts.yml playbooks/compliance.yml
 - name: "Thu thap cau hinh hien tai tu thiet bi"
   hosts: all
