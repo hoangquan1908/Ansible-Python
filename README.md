@@ -27,7 +27,7 @@ cau hinh va phep kiem tra deu bat nguon tu do.
 | `scripts/drift_check.py`, `benchmark.py` | **Chung** | Phat hien troi cau hinh + do hieu qua van hanh |
 | `scripts/risk_assessment.py` | **Tung** | Danh gia rui ro va MTTR |
 | `playbooks/` | Ca nhom | Diem vao chay tung khoi va toan he thong |
-| `docs/` | Ca nhom | Thuyet minh, kien truc, so lieu danh gia |
+| `docs/` | **Quan** | Thuyet minh, kien truc, so lieu danh gia |
 
 ## Cay thu muc
 
