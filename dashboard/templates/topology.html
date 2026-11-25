@@ -1,96 +1,104 @@
 {% extends "base.html" %}
 {% block title %}Topology{% endblock %}
 {% block content %}
-{# tra cuu thiet bi theo ten de lay ASN / IP / OS tu SoT; vi tri node van co dinh #}
-{% set D = {} %}
-{% for d in sot.devices %}{% set _ = D.update({d.name: d}) %}{% endfor %}
-{% macro node(name, x, y, color) %}
-{% set dev = D.get(name) %}
-<g transform="translate({{ x }},{{ y }})" class="node">
-  <rect x="-74" y="-30" width="148" height="60" rx="12" fill="#121b2e" stroke="{{ color }}" stroke-width="2"/>
-  <rect x="-74" y="-30" width="148" height="60" rx="12" fill="{{ color }}" opacity=".08"/>
-  <text x="0" y="-8" text-anchor="middle" fill="{{ color }}" font-size="15" font-weight="800">{{ name }}</text>
-  <text x="0" y="9" text-anchor="middle" fill="#c3cee0" font-size="11">{{ ('SR Linux' if dev.os == 'srlinux' else 'FRRouting') if dev else '' }} · AS{{ dev.bgp.asn if dev else '?' }}</text>
-  <text x="0" y="23" text-anchor="middle" fill="#8b9bb7" font-size="10">{{ dev.mgmt_ip if dev else '' }}</text>
-</g>
-{% endmacro %}
-
+{# So do sinh tu dong tu SoT (app.py: build_topology): tang theo 'role', duong noi theo cap cong cung subnet #}
 <div class="page-head">
   <div>
     <h1>Sơ đồ mạng</h1>
-    <div class="page-sub">Kiến trúc 3 tầng Edge — Spine — Leaf · {{ sot.devices|length }} thiết bị · eBGP mỗi thiết bị một ASN</div>
+    <div class="page-sub">Sinh tự động từ SoT · {{ topo.tiers|length }} tầng ({{ topo.tiers|map(attribute='role')|join(' — ') }}) · {{ topo.nodes|length }} thiết bị · {{ topo.links|length }} liên kết</div>
   </div>
   <div class="legend">
-    <span><i style="background:#f97316"></i>Edge</span>
-    <span><i style="background:#4f8cff"></i>Spine</span>
-    <span><i style="background:#22c55e"></i>Leaf</span>
-    <span><i style="background:transparent;border:1px dashed #8b9bb7"></i>Đường dự phòng</span>
+    {% for t in topo.tiers %}<span><i style="background:{{ t.color }}"></i>{{ t.role|capitalize }} ({{ t.count }})</span>{% endfor %}
+    <span><i style="background:transparent;border:1px dashed #8b9bb7"></i>Uplink dự phòng</span>
   </div>
 </div>
 
-<div class="card section" style="padding:12px">
-<svg viewBox="0 0 800 480" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:920px;display:block;margin:0 auto" font-family="Segoe UI, system-ui, sans-serif">
-  <!-- tier bands -->
-  <rect x="10" y="22" width="780" height="80" rx="12" fill="rgba(249,115,22,.04)"/>
-  <rect x="10" y="187" width="780" height="80" rx="12" fill="rgba(79,140,255,.04)"/>
-  <rect x="10" y="347" width="780" height="80" rx="12" fill="rgba(34,197,94,.04)"/>
-  <text x="28" y="62" transform="rotate(-90,28,62)" text-anchor="middle" fill="#8b9bb7" font-size="11" font-weight="700" letter-spacing="1.5">EDGE</text>
-  <text x="28" y="227" transform="rotate(-90,28,227)" text-anchor="middle" fill="#8b9bb7" font-size="11" font-weight="700" letter-spacing="1.5">SPINE</text>
-  <text x="28" y="387" transform="rotate(-90,28,387)" text-anchor="middle" fill="#8b9bb7" font-size="11" font-weight="700" letter-spacing="1.5">LEAF</text>
+<div class="card section" style="padding:12px;overflow-x:auto">
+<svg viewBox="0 0 {{ topo.width }} {{ topo.height }}" xmlns="http://www.w3.org/2000/svg"
+     style="width:100%;min-width:{{ [topo.width * 0.75, 600]|min|int }}px;max-width:{{ [topo.width * 1.15, 1180]|min|int }}px;display:block;margin:0 auto"
+     font-family="Segoe UI, system-ui, sans-serif">
+  <!-- dai mau theo tang -->
+  {% for t in topo.tiers %}
+  <rect x="10" y="{{ t.y - 40 }}" width="{{ topo.width - 20 }}" height="80" rx="12" fill="{{ t.color }}" opacity=".05"/>
+  <text x="30" y="{{ t.y }}" transform="rotate(-90,30,{{ t.y }})" text-anchor="middle" fill="#8b9bb7"
+        font-size="11" font-weight="700" letter-spacing="1.5">{{ t.role|upper }}</text>
+  {% endfor %}
 
-  <!-- links -->
+  <!-- duong noi -->
   <g stroke="#3a5076" stroke-width="2.5" fill="none" stroke-linecap="round">
-    <line x1="400" y1="92" x2="250" y2="197"/>   <!-- edge1 - spine1 -->
-    <line x1="400" y1="92" x2="550" y2="197"/>   <!-- edge1 - spine2 -->
-    <line x1="250" y1="257" x2="130" y2="357"/>  <!-- spine1 - leaf1 -->
-    <line x1="250" y1="257" x2="400" y2="357"/>  <!-- spine1 - leaf2 -->
-    <line x1="550" y1="257" x2="400" y2="357" stroke-dasharray="7 6"/>  <!-- spine2 - leaf2 -->
-    <line x1="550" y1="257" x2="670" y2="357"/>  <!-- spine2 - leaf3 -->
+    {% for l in topo.links %}
+    <line x1="{{ l.x1 }}" y1="{{ l.y1 }}" x2="{{ l.x2 }}" y2="{{ l.y2 }}" {% if l.backup %}stroke-dasharray="7 6"{% endif %}>
+      <title>{{ l.a }} {{ l.a_if }} ↔ {{ l.b }} {{ l.b_if }} ({{ l.net }})</title>
+    </line>
+    {% endfor %}
   </g>
 
-  <!-- link labels -->
-  <g font-size="10" fill="#9fb0cc" font-family="Consolas, monospace" stroke="#131c2f" stroke-width="4" paint-order="stroke">
-    <text x="300" y="138" transform="rotate(-35,300,138)">10.0.1.0/30</text>
-    <text x="458" y="124" transform="rotate(35,458,124)">10.0.2.0/30</text>
-    <text x="150" y="314" transform="rotate(-40,150,314)">10.0.11.0/30</text>
-    <text x="300" y="300" transform="rotate(33,300,300)">10.0.12.0/30</text>
-    <text x="440" y="326" transform="rotate(-33,440,326)">10.0.22.0/30</text>
-    <text x="606" y="300" transform="rotate(40,606,300)">10.0.23.0/30</text>
+  <!-- nhan subnet -->
+  <g font-size="10" fill="#9fb0cc" font-family="Consolas, monospace" stroke="#131c2f" stroke-width="4" paint-order="stroke" text-anchor="middle">
+    {% for l in topo.links %}
+    <text x="{{ l.mx }}" y="{{ l.my - 5 }}" transform="rotate({{ l.ang }},{{ l.mx }},{{ l.my - 5 }})">{{ l.net }}</text>
+    {% endfor %}
   </g>
 
-  {{ node('edge1', 400, 62, '#f97316') }}
-  {{ node('spine1', 250, 227, '#4f8cff') }}
-  {{ node('spine2', 550, 227, '#4f8cff') }}
-  {{ node('leaf1', 130, 387, '#22c55e') }}
-  {{ node('leaf2', 400, 387, '#22c55e') }}
-  {{ node('leaf3', 670, 387, '#22c55e') }}
+  <!-- thiet bi -->
+  {% for n in topo.nodes %}
+  <g transform="translate({{ n.x }},{{ n.y }})">
+    <title>{{ n.name }} · {{ n.os }} · {{ n.role }} · AS{{ n.asn }} · {{ n.mgmt_ip }}</title>
+    <rect x="-74" y="-30" width="148" height="60" rx="12" fill="#121b2e" stroke="{{ n.color }}" stroke-width="2"/>
+    <rect x="-74" y="-30" width="148" height="60" rx="12" fill="{{ n.color }}" opacity=".08"/>
+    <text x="0" y="-8" text-anchor="middle" fill="{{ n.color }}" font-size="15" font-weight="800">{{ n.name }}</text>
+    <text x="0" y="9" text-anchor="middle" fill="#c3cee0" font-size="11">{{ 'SR Linux' if n.os == 'srlinux' else 'FRRouting' if n.os == 'frr' else n.os }}{% if n.asn %} · AS{{ n.asn }}{% endif %}</text>
+    <text x="0" y="23" text-anchor="middle" fill="#8b9bb7" font-size="10">{{ n.mgmt_ip }}</text>
+  </g>
+  {% endfor %}
 </svg>
 </div>
 
+{% if topo.unlinked %}
+<div class="card section" style="border-color:rgba(245,179,1,.45)">
+  <b class="score-mid">Thiết bị chưa có liên kết:</b> {{ topo.unlinked|join(', ') }}
+  <div class="small muted" style="margin-top:4px">Không tìm thấy cổng nào cùng subnet /30 với thiết bị khác trong SoT. Kiểm tra lại trường <code>interfaces</code>.</div>
+</div>
+{% endif %}
+
 <div class="grid-2">
   <div class="card">
-    <div class="section-title"><h2>Thông tin topology</h2></div>
+    <div class="section-title"><h2>Thông tin topology</h2><span class="hint">Đếm từ SoT</span></div>
     <dl class="kv">
-      <dt>Số thiết bị</dt><dd>{{ sot.devices|length }}</dd>
-      <dt>SR Linux</dt><dd>{{ sot.devices|selectattr('os','eq','srlinux')|map(attribute='name')|join(', ') }}</dd>
-      <dt>FRRouting</dt><dd>{{ sot.devices|selectattr('os','eq','frr')|map(attribute='name')|join(', ') }}</dd>
-      <dt>Số tầng</dt><dd>3 (Edge — Spine — Leaf)</dd>
-      <dt>Liên kết</dt><dd>6 liên kết dữ liệu /30 + mạng quản trị 172.20.20.0/24</dd>
+      <dt>Số thiết bị</dt><dd>{{ topo.nodes|length }}</dd>
+      <dt>SR Linux</dt><dd>{{ sot.devices|selectattr('os','eq','srlinux')|map(attribute='name')|join(', ') or '—' }}</dd>
+      <dt>FRRouting</dt><dd>{{ sot.devices|selectattr('os','eq','frr')|map(attribute='name')|join(', ') or '—' }}</dd>
+      <dt>Số tầng</dt><dd>{{ topo.tiers|length }} ({{ topo.tiers|map(attribute='role')|join(' — ') }})</dd>
+      <dt>Liên kết</dt><dd>{{ topo.links|length }} liên kết dữ liệu{% if topo.mgmt_net %} + mạng quản trị {{ topo.mgmt_net }}{% endif %}</dd>
       <dt>Định tuyến</dt><dd>eBGP, mỗi thiết bị một ASN</dd>
     </dl>
   </div>
   <div class="card">
-    <div class="section-title"><h2>Danh sách VLAN</h2><span class="hint">Từ SoT</span></div>
+    <div class="section-title"><h2>Danh sách liên kết</h2><span class="hint">Ghép theo subnet</span></div>
     <div class="table-wrap">
     <table>
-      <thead><tr><th class="num" style="text-align:left">ID</th><th>Tên</th><th>Mô tả</th></tr></thead>
+      <thead><tr><th>Subnet</th><th>Đầu A</th><th>Đầu B</th></tr></thead>
       <tbody>
-      {% for v in sot.vlans %}
-      <tr><td><span class="badge badge-os">{{ v.id }}</span></td><td><b>{{ v.name }}</b></td><td class="muted">{{ v.description }}</td></tr>
+      {% for l in topo.links %}
+      <tr><td><code>{{ l.net }}</code></td><td><b>{{ l.a }}</b> <span class="muted small">{{ l.a_if }}</span></td><td><b>{{ l.b }}</b> <span class="muted small">{{ l.b_if }}</span>{% if l.backup %} <span class="badge badge-muted">dự phòng</span>{% endif %}</td></tr>
       {% endfor %}
       </tbody>
     </table>
     </div>
+  </div>
+</div>
+
+<div class="card section" style="margin-top:16px">
+  <div class="section-title"><h2>Danh sách VLAN</h2><span class="hint">Từ SoT</span></div>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>ID</th><th>Tên</th><th>Mô tả</th></tr></thead>
+    <tbody>
+    {% for v in sot.vlans %}
+    <tr><td><span class="badge badge-os">{{ v.id }}</span></td><td><b>{{ v.name }}</b></td><td class="muted">{{ v.description }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
   </div>
 </div>
 {% endblock %}

@@ -8,7 +8,9 @@ Chay:  python3 dashboard/app.py
 Truy cap: http://localhost:5000
 """
 import datetime as dt
+import ipaddress
 import json
+import math
 import sqlite3
 from pathlib import Path
 
@@ -201,7 +203,82 @@ def api_scan_detail(scan_id):
 @app.route("/topology")
 def topology():
     sot = load_sot()
-    return render_template("topology.html", sot=sot)
+    return render_template("topology.html", sot=sot, topo=build_topology(sot))
+
+
+TIER_ORDER = ["edge", "spine", "leaf"]
+TIER_COLOR = {"edge": "#f97316", "spine": "#4f8cff", "leaf": "#22c55e"}
+
+
+def build_topology(sot: dict) -> dict:
+    """Sinh so do tu SoT: tang theo truong 'role', lien ket theo cap cong cung subnet."""
+    devices = sot.get("devices", [])
+    role_of = {d["name"]: d.get("role") or "khac" for d in devices}
+    roles = [r for r in TIER_ORDER if r in role_of.values()]
+    roles += sorted(set(role_of.values()) - set(roles))
+    row_of = {name: roles.index(r) for name, r in role_of.items()}
+
+    # 1) Lien ket: 2 cong cung mot subnet IPv4 la mot duong noi
+    by_net = {}
+    for d in devices:
+        for itf in d.get("interfaces", []):
+            try:
+                net = ipaddress.ip_interface(itf.get("ipv4", "")).network
+            except ValueError:
+                continue
+            by_net.setdefault(str(net), []).append((d["name"], itf["name"]))
+    links = []
+    for net, eps in sorted(by_net.items()):
+        if len(eps) != 2:
+            continue
+        (a, ia), (b, ib) = sorted(eps, key=lambda e: (row_of[e[0]], e[0]))   # a = tang tren
+        links.append({"net": net, "a": a, "a_if": ia, "b": b, "b_if": ib})
+
+    # 2) Vi tri: moi tang mot hang; tang duoi sap theo trung binh x cua thiet bi noi len (it cat cheo)
+    node_w, gap, left, top, row_h = 148, 40, 70, 62, 165
+    widest = max([sum(1 for r in role_of.values() if r == role) for role in roles] or [1])
+    width = max(800, 2 * left + widest * (node_w + gap))
+    pos, tiers = {}, []
+    for row, role in enumerate(roles):
+        members = [d for d in devices if role_of[d["name"]] == role]
+        def order(d):
+            xs = [pos[l["a"]][0] for l in links if l["b"] == d["name"] and l["a"] in pos]
+            return (sum(xs) / len(xs) if xs else float("inf"), d["name"])
+        members.sort(key=order if row else (lambda d: d["name"]))
+        y = top + row * row_h
+        step = (width - 2 * left) / max(len(members), 1)
+        for k, d in enumerate(members):
+            pos[d["name"]] = (round(left + step * (k + 0.5)), y)
+        tiers.append({"role": role, "y": y, "color": TIER_COLOR.get(role, "#a78bfa"), "count": len(members)})
+
+    # 3) Hinh hoc duong noi; thiet bi co >1 uplink: duong thu 2 tro di ve net dut (du phong)
+    uplinks = {}
+    for l in links:
+        uplinks.setdefault(l["b"], []).append(l)
+    for lst in uplinks.values():
+        lst.sort(key=lambda l: pos[l["a"]][0])
+        for k, l in enumerate(lst):
+            l["backup"] = k > 0
+    for l in links:
+        (x1, y1), (x2, y2) = pos[l["a"]], pos[l["b"]]
+        if y1 != y2:
+            y1, y2 = y1 + 30, y2 - 30
+        ang = math.degrees(math.atan2(y2 - y1, x2 - x1))
+        if ang > 90: ang -= 180
+        if ang < -90: ang += 180
+        l.update(x1=x1, y1=y1, x2=x2, y2=y2, mx=(x1 + x2) / 2, my=(y1 + y2) / 2, ang=round(ang, 1))
+
+    nodes = [{"name": d["name"], "os": d.get("os", ""), "role": role_of[d["name"]],
+              "asn": d.get("bgp", {}).get("asn", ""), "mgmt_ip": d.get("mgmt_ip", ""),
+              "x": pos[d["name"]][0], "y": pos[d["name"]][1],
+              "color": TIER_COLOR.get(role_of[d["name"]], "#a78bfa")} for d in devices]
+    mgmt = ""
+    if devices and devices[0].get("mgmt_ip"):
+        mgmt = str(ipaddress.ip_network(devices[0]["mgmt_ip"] + "/24", strict=False))
+    linked = {l["a"] for l in links} | {l["b"] for l in links}
+    return {"width": width, "height": top + (len(roles) - 1) * row_h + 70, "tiers": tiers,
+            "nodes": nodes, "links": links, "mgmt_net": mgmt,
+            "unlinked": [d["name"] for d in devices if d["name"] not in linked]}
 
 
 @app.route("/metrics")
