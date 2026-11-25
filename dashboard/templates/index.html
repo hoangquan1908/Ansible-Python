@@ -20,8 +20,8 @@
   </div>
   <div class="card">
     <div class="card-title">Luat CIS</div>
-    <div class="stat-value">18</div>
-    <div class="stat-sub">11 nhom kiem soat</div>
+    <div class="stat-value">{{ policy_stats.n_rules }}</div>
+    <div class="stat-sub">{{ policy_stats.n_groups }} nhom kiem soat{% for os_name, n in policy_stats.per_os.items() %} · {{ os_name }} {{ n }}{% endfor %}</div>
   </div>
   <div class="card">
     <div class="card-title">Lan quet</div>

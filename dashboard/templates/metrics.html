@@ -225,7 +225,7 @@
       <td><b>Diem tuan thu toan he thong (%)</b></td>
       <td class="score-low" style="font-weight:700">{{ comparison.before.overall_score if comparison else '--' }}%</td>
       <td class="score-high" style="font-weight:700">{{ comparison.after.overall_score if comparison else '--' }}%</td>
-      <td>CIS 18 luat · nguon: {{ comparison.before.config_source ~ ' → ' ~ comparison.after.config_source if comparison else 'chua chay score compare' }}</td>
+      <td>CIS {{ policy_stats.n_rules }} luat · nguon: {{ comparison.before.config_source ~ ' → ' ~ comparison.after.config_source if comparison else 'chua chay score compare' }}</td>
     </tr>
     <tr>
       <td><b>So luat CIS vi pham</b></td>

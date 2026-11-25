@@ -20,7 +20,7 @@ DB_PATH = REPO / "dashboard" / "compliance.db"
 
 import sys
 sys.path.insert(0, str(COMPLIANCE / "tools"))
-from score import run_scoring
+from score import run_scoring, load_yaml, rule_applies
 
 app = Flask(__name__)
 
@@ -88,6 +88,16 @@ def load_sot():
         return yaml.safe_load(f)
 
 
+def load_policy_stats(os_names) -> dict:
+    policy = load_yaml(COMPLIANCE / "policy" / "cis_rules.yaml")
+    rules = policy.get("rules", [])
+    return {
+        "n_rules": len(rules),
+        "n_groups": len({r["id"].rsplit(".", 1)[0] for r in rules}),
+        "per_os": {o: sum(1 for r in rules if rule_applies(r, o)) for o in os_names},
+    }
+
+
 # -------------------------------------------------------------- Routes
 @app.route("/")
 def index():
@@ -106,11 +116,13 @@ def index():
         ).fetchall()
     conn.close()
     sot = load_sot()
+    policy_stats = load_policy_stats(sorted({d["os"] for d in sot["devices"]}))
     return render_template("index.html",
                            latest=latest,
                            history=history,
                            device_scores=device_scores,
-                           sot=sot)
+                           sot=sot,
+                           policy_stats=policy_stats)
 
 
 @app.route("/api/scan", methods=["POST"])
@@ -198,11 +210,14 @@ def metrics():
     if cpath.exists():
         comparison = json.loads(cpath.read_text(encoding="utf-8"))
 
+    sot = load_sot()
+    policy_stats = load_policy_stats(sorted({d["os"] for d in sot["devices"]}))
     return render_template("metrics.html",
                            benchmark=benchmark,
                            risk=risk,
                            drift=drift,
-                           comparison=comparison)
+                           comparison=comparison,
+                           policy_stats=policy_stats)
 
 
 @app.route("/api/metrics")
