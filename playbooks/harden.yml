@@ -1,5 +1,4 @@
 ---
-# Tung — chuan hoa an ninh theo CIS
 # Chay: ansible-playbook -i inventory/hosts.yml playbooks/harden.yml
 - name: "HARDENING — Chuan hoa an ninh mang theo CIS"
   hosts: all
