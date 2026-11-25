@@ -108,6 +108,7 @@ def index():
     history = conn.execute(
         "SELECT id, scanned_at, config_source, overall_score, n_devices FROM scan_history ORDER BY id DESC LIMIT 20"
     ).fetchall()
+    total_scans = conn.execute("SELECT COUNT(*) FROM scan_history").fetchone()[0]
     device_scores = []
     if latest:
         device_scores = conn.execute(
@@ -121,6 +122,7 @@ def index():
                            latest=latest,
                            history=history,
                            device_scores=device_scores,
+                           total_scans=total_scans,
                            sot=sot,
                            policy_stats=policy_stats)
 
@@ -217,7 +219,8 @@ def metrics():
                            risk=risk,
                            drift=drift,
                            comparison=comparison,
-                           policy_stats=policy_stats)
+                           policy_stats=policy_stats,
+                           n_devices=len(sot["devices"]))
 
 
 @app.route("/api/metrics")

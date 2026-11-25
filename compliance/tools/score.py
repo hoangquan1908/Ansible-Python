@@ -129,7 +129,7 @@ def print_comparison(before: dict, after: dict) -> None:
     print("DOI CHUNG TRUOC / SAU HARDENING")
     print("=" * 64)
     for db, da in zip(before["devices"], after["devices"]):
-        diff = da["score"] - db["score"]
+        diff = round(da["score"] - db["score"], 1)
         arrow = "+" if diff >= 0 else ""
         print(f"\n  {db['device']}:  {db['score']}% -> {da['score']}%  ({arrow}{diff}%)")
         fixed = []
@@ -141,7 +141,7 @@ def print_comparison(before: dict, after: dict) -> None:
         remaining = [r["id"] for r in da["results"] if not r["passed"]]
         if remaining:
             print(f"    Con vi pham:  {', '.join(remaining)}")
-    diff_overall = after["overall_score"] - before["overall_score"]
+    diff_overall = round(after["overall_score"] - before["overall_score"], 1)
     arrow = "+" if diff_overall >= 0 else ""
     print(f"\n  TONG THE: {before['overall_score']}% -> {after['overall_score']}%  ({arrow}{diff_overall}%)")
     print("=" * 64 + "\n")
