@@ -1,5 +1,4 @@
 ---
-# Chung — trien khai cau hinh tu SoT xuong thiet bi
 # Chay: ansible-playbook -i inventory/hosts.yml playbooks/deploy.yml
 - name: "GIAI DOAN 1 — Cau hinh co ban va dinh tuyen"
   hosts: all
