@@ -1,0 +1,88 @@
+# KICH BAN QUY MO 3 THIET BI — sinh boi scripts/gen_scenarios.py, khong sua tay.
+# Chi dung cho score.py --sot; Ansible va dashboard van dung sot/devices.yaml.
+meta:
+  ten_de_tai: Tu dong hoa cau hinh va kiem soat tuan thu an ninh mang
+  nhom: Ky thuat he thong va mang may tinh
+  phien_ban_sot: 2.0-kichban
+  kich_ban: 3 thiet bi (gia lap quy mo, chi dung de cham diem)
+devices:
+- name: edge1
+  os: frr
+  role: edge
+  mgmt_ip: 172.20.20.10
+  profile: strict
+  loopback_ip: 10.255.0.1
+  interfaces:
+  - name: eth1
+    description: Downlink to spine1
+    ipv4: 10.0.1.1/30
+  bgp:
+    asn: 65000
+    router_id: 10.255.0.1
+    neighbors:
+    - address: 10.0.1.2
+      remote_as: 65010
+      description: eBGP to spine1
+- name: spine1
+  os: srlinux
+  role: spine
+  mgmt_ip: 172.20.20.11
+  profile: strict
+  loopback_ip: 10.255.0.11
+  interfaces:
+  - name: ethernet-1/1
+    description: Uplink to edge1
+    ipv4: 10.0.1.2/30
+  - name: ethernet-1/2
+    description: Downlink to leaf1
+    ipv4: 10.0.11.1/30
+  bgp:
+    asn: 65010
+    router_id: 10.255.0.11
+    neighbors:
+    - address: 10.0.1.1
+      remote_as: 65000
+      description: eBGP to edge1
+    - address: 10.0.11.2
+      remote_as: 65101
+      description: eBGP to leaf1
+- name: leaf1
+  os: srlinux
+  role: leaf
+  mgmt_ip: 172.20.20.21
+  profile: baseline
+  loopback_ip: 10.255.0.21
+  interfaces:
+  - name: ethernet-1/1
+    description: Uplink to spine1
+    ipv4: 10.0.11.2/30
+  bgp:
+    asn: 65101
+    router_id: 10.255.0.21
+    neighbors:
+    - address: 10.0.11.1
+      remote_as: 65010
+      description: eBGP to spine1
+vlans:
+- id: 10
+  name: MGMT
+  description: Management VLAN
+- id: 20
+  name: SERVERS
+  description: Server VLAN
+- id: 30
+  name: USERS
+  description: User VLAN
+policy_inputs:
+  ntp_servers:
+  - 172.20.20.2
+  syslog_servers:
+  - 172.20.20.3
+  allowed_mgmt_cidr: 172.20.20.0/24
+  domain_name: datn.local
+  dns_servers:
+  - 8.8.8.8
+  banner_text: 'CANH BAO: He thong noi bo - Cam truy cap trai phep. Moi hanh vi truy
+    cap deu duoc ghi nhan va giam sat.'
+  ssh_timeout: 300
+  max_login_attempts: 3
