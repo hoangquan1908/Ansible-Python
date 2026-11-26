@@ -5,7 +5,9 @@ Sinh inventory Ansible TU Nguon du lieu tin cay (SoT).
 Chi can sua 1 cho (sot/devices.yaml) la ca inventory tu cap nhat.
 
 Chay:  python scripts/sot_to_inventory.py
+       python scripts/sot_to_inventory.py --sot sot/scenarios/devices_12.yaml   # kich ban quy mo
 """
+import argparse
 from pathlib import Path
 import yaml
 
@@ -29,7 +31,7 @@ def main():
         }
     inventory = {"all": {"children": {os: grp for os, grp in groups.items()}}}
     OUT.write_text(
-        "# TU SINH tu sot/devices.yaml — DUNG sua tay, sua o SoT roi chay lai.\n"
+        f"# TU SINH tu {SOT.relative_to(REPO) if SOT.is_relative_to(REPO) else SOT} — DUNG sua tay, sua o SoT roi chay lai.\n"
         + yaml.safe_dump(inventory, allow_unicode=True, sort_keys=False),
         encoding="utf-8",
     )
@@ -38,4 +40,10 @@ def main():
 
 
 if __name__ == "__main__":
+    ap = argparse.ArgumentParser(description="Sinh inventory Ansible tu SoT.")
+    ap.add_argument("--sot", default=str(SOT), help="file SoT (mac dinh sot/devices.yaml)")
+    ap.add_argument("--out", default=str(OUT), help="file inventory dau ra")
+    a = ap.parse_args()
+    SOT = Path(a.sot) if Path(a.sot).is_absolute() else REPO / a.sot
+    OUT = Path(a.out) if Path(a.out).is_absolute() else REPO / a.out
     main()

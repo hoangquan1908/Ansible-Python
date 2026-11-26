@@ -188,15 +188,18 @@ def api_scan_detail(scan_id):
     conn = get_db()
     scan = conn.execute("SELECT * FROM scan_history WHERE id=?", (scan_id,)).fetchone()
     if not scan:
+        conn.close()
         return jsonify({"error": "Khong tim thay"}), 404
     devices = conn.execute(
         "SELECT * FROM device_scores WHERE scan_id=? ORDER BY device", (scan_id,)
     ).fetchall()
     conn.close()
+    info = dict(scan)
+    report = json.loads(info.pop("report_json"))   # bo chuoi trung lap, tra ve dang dict o khoa "report"
     return jsonify({
-        "scan": dict(scan),
+        "scan": info,
         "devices": [dict(d) for d in devices],
-        "report": json.loads(scan["report_json"])
+        "report": report
     })
 
 
@@ -228,7 +231,7 @@ def build_topology(sot: dict) -> dict:
                 continue
             by_net.setdefault(str(net), []).append((d["name"], itf["name"]))
     links = []
-    for net, eps in sorted(by_net.items()):
+    for net, eps in sorted(by_net.items(), key=lambda kv: ipaddress.ip_network(kv[0])):
         if len(eps) != 2:
             continue
         (a, ia), (b, ib) = sorted(eps, key=lambda e: (row_of[e[0]], e[0]))   # a = tang tren

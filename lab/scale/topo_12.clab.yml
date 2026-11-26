@@ -1,0 +1,101 @@
+# TU SINH tu sot/scenarios/devices_12.yaml boi scripts/scale_lab.py — khong sua tay
+name: datn-lab
+topology:
+  nodes:
+    edge1:
+      kind: linux
+      image: quay.io/frrouting/frr:master
+      mgmt-ipv4: 172.20.20.10
+      exec: &id001
+      - apk add --no-cache python3 openssh-server
+      - ssh-keygen -A
+      - echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+      - /usr/sbin/sshd
+      - sed -i 's/^bgpd=no/bgpd=yes/' /etc/frr/daemons
+    spine1:
+      kind: nokia_srlinux
+      image: ghcr.io/nokia/srlinux:latest
+      mgmt-ipv4: 172.20.20.11
+    spine2:
+      kind: nokia_srlinux
+      image: ghcr.io/nokia/srlinux:latest
+      mgmt-ipv4: 172.20.20.12
+    leaf1:
+      kind: nokia_srlinux
+      image: ghcr.io/nokia/srlinux:latest
+      mgmt-ipv4: 172.20.20.21
+    leaf2:
+      kind: nokia_srlinux
+      image: ghcr.io/nokia/srlinux:latest
+      mgmt-ipv4: 172.20.20.22
+    leaf3:
+      kind: linux
+      image: quay.io/frrouting/frr:master
+      mgmt-ipv4: 172.20.20.23
+      exec: *id001
+    edge2:
+      kind: linux
+      image: quay.io/frrouting/frr:master
+      mgmt-ipv4: 172.20.20.14
+      exec: *id001
+    spine3:
+      kind: nokia_srlinux
+      image: ghcr.io/nokia/srlinux:latest
+      mgmt-ipv4: 172.20.20.15
+    spine4:
+      kind: nokia_srlinux
+      image: ghcr.io/nokia/srlinux:latest
+      mgmt-ipv4: 172.20.20.16
+    leaf4:
+      kind: nokia_srlinux
+      image: ghcr.io/nokia/srlinux:latest
+      mgmt-ipv4: 172.20.20.24
+    leaf5:
+      kind: nokia_srlinux
+      image: ghcr.io/nokia/srlinux:latest
+      mgmt-ipv4: 172.20.20.25
+    leaf6:
+      kind: linux
+      image: quay.io/frrouting/frr:master
+      mgmt-ipv4: 172.20.20.26
+      exec: *id001
+  links:
+  - endpoints:
+    - edge1:eth1
+    - spine1:e1-1
+  - endpoints:
+    - edge1:eth2
+    - spine2:e1-1
+  - endpoints:
+    - edge2:eth1
+    - spine3:e1-1
+  - endpoints:
+    - edge2:eth2
+    - spine4:e1-1
+  - endpoints:
+    - spine1:e1-2
+    - leaf1:e1-1
+  - endpoints:
+    - spine1:e1-3
+    - leaf2:e1-1
+  - endpoints:
+    - spine2:e1-2
+    - leaf2:e1-2
+  - endpoints:
+    - spine2:e1-3
+    - leaf3:eth1
+  - endpoints:
+    - spine3:e1-2
+    - leaf4:e1-1
+  - endpoints:
+    - spine3:e1-3
+    - leaf5:e1-1
+  - endpoints:
+    - spine4:e1-2
+    - leaf5:e1-2
+  - endpoints:
+    - spine4:e1-3
+    - leaf6:eth1
+mgmt:
+  network: datn-mgmt
+  ipv4-subnet: 172.20.20.0/24

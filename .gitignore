@@ -39,3 +39,7 @@ lab/clab-*/
 # Ban sao luu (sinh tu thiet bi)
 backups/*.cfg
 backups/*.json
+
+# Anh chup cau hinh that cua scale_lab.py (co the chua mat khau) va thu muc lab sinh ra
+compliance/configs/scale_live/
+lab/scale/clab-*/

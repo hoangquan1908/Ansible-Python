@@ -1,5 +1,17 @@
 {% extends "base.html" %}
 {% block title %}Tổng quan{% endblock %}
+{% block head %}
+<style>
+.row-link { cursor: pointer; }
+.row-link:hover td { background: rgba(79,140,255,.10) !important; }
+.modal-bg { position: fixed; inset: 0; background: rgba(3,7,18,.72); z-index: 40; display: flex; align-items: flex-start;
+            justify-content: center; padding: 48px 16px; overflow-y: auto; }
+.modal { width: 100%; max-width: 980px; }
+.modal-close { background: none; border: 1px solid var(--line-2); color: var(--fg); border-radius: 8px; padding: 6px 12px; cursor: pointer; font: inherit; }
+.modal-close:hover { background: var(--card-hover); }
+.viol { border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; margin: 4px 0; background: rgba(255,255,255,.02); font-size: 12.5px; }
+</style>
+{% endblock %}
 {% block content %}
 {% macro sc(s) %}{{ 'score-high' if s >= 90 else 'score-mid' if s >= 70 else 'score-low' }}{% endmacro %}
 {% macro sbg(s) %}{{ 'bg-high' if s >= 90 else 'bg-mid' if s >= 70 else 'bg-low' }}{% endmacro %}
@@ -62,7 +74,9 @@
     <div class="label">Quét cấu hình</div>
     <div class="controls">
       <select id="scanDir" aria-label="Thư mục cấu hình cần quét">
-        {% for d in config_dirs %}<option value="{{ d }}" {{ 'selected' if d == 'golden' }}>{{ d }}</option>{% endfor %}
+        {% for d in config_dirs %}
+          <option value="{{ d }}" {{ 'selected' if d == 'golden' }}>{{ d }}</option>
+        {% endfor %}
       </select>
       <button class="btn btn-primary" onclick="runScan(this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>Quét</button>
@@ -155,14 +169,14 @@
 <div class="card section">
   <div class="section-title">
     <h2>Lịch sử quét</h2>
-    <span class="hint">20 lần gần nhất / tổng {{ total_scans }} lần</span>
+    <span class="hint">Bấm vào một dòng để xem chi tiết · 20 lần gần nhất / tổng {{ total_scans }} lần</span>
   </div>
   <div class="table-wrap">
   <table>
     <thead><tr><th>#</th><th>Thời gian</th><th>Nguồn cấu hình</th><th>Điểm</th><th class="num">Số thiết bị</th></tr></thead>
     <tbody>
     {% for h in history %}
-    <tr>
+    <tr class="row-link" onclick="showScan({{ h.id }})" title="Xem chi tiết lần quét #{{ h.id }}">
       <td class="muted">{{ h.id }}</td>
       <td>{{ h.scanned_at }}</td>
       <td><span class="badge badge-os">{{ h.config_source }}</span></td>
@@ -175,10 +189,57 @@
   </div>
 </div>
 {% endif %}
+
+<!-- CHI TIET MOT LAN QUET (mo khi bam vao dong lich su, du lieu tu GET /api/scan/<id>) -->
+<div id="scanModal" class="modal-bg hidden" onclick="if (event.target === this) closeScan()">
+  <div class="card modal">
+    <div class="section-title">
+      <h2 id="scanTitle">Chi tiết lần quét</h2>
+      <button class="modal-close" onclick="closeScan()">Đóng ✕</button>
+    </div>
+    <div id="scanBody"><div class="empty">Đang tải...</div></div>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function showScan(id) {
+  const modal = document.getElementById('scanModal');
+  const body = document.getElementById('scanBody');
+  document.getElementById('scanTitle').textContent = `Chi tiết lần quét #${id}`;
+  body.innerHTML = '<div class="empty">Đang tải...</div>';
+  modal.classList.remove('hidden');
+  try {
+    const r = await fetch(`/api/scan/${id}`);
+    const d = await r.json();
+    if (!r.ok || d.error) { body.innerHTML = `<div class="empty">${esc(d.error || 'Không tải được dữ liệu')}</div>`; return; }
+    const s = d.scan, rep = d.report;
+    let html = `<div class="grid-3" style="margin-bottom:16px">
+      <div class="card flat"><div class="card-title">Điểm toàn hệ thống</div><div class="stat-value ${scoreClass(s.overall_score)}">${s.overall_score}<span class="stat-unit">%</span></div></div>
+      <div class="card flat"><div class="card-title">Nguồn cấu hình</div><div style="margin-top:8px"><span class="badge badge-os">${esc(s.config_source)}</span></div><div class="stat-sub">${s.n_devices} thiết bị · ${s.n_rules} luật</div></div>
+      <div class="card flat"><div class="card-title">Thời gian quét</div><div style="margin-top:8px;font-weight:700">${esc(s.scanned_at)}</div></div>
+    </div>
+    <div class="table-wrap"><table><thead><tr><th>Thiết bị</th><th>Điểm</th><th class="num">Luật đạt</th><th>Vi phạm</th></tr></thead><tbody>`;
+    for (const dev of rep.devices) {
+      const viol = dev.results.filter(x => !x.passed);
+      const vhtml = viol.length
+        ? viol.map(v => `<div class="viol"><b>${esc(v.id)}</b> <span class="badge sev-${esc(v.severity)}">${esc(v.severity)}</span> ${esc(v.title)}<div class="muted">Khắc phục: ${esc(v.remediation)}</div></div>`).join('')
+        : '<span class="badge badge-ok">Không vi phạm</span>';
+      html += `<tr><td style="vertical-align:top"><b>${esc(dev.device)}</b><div class="small muted">${esc(dev.os)} · ${esc(dev.role)}</div></td>
+        <td style="vertical-align:top"><div class="meter-row"><b class="${scoreClass(dev.score)}" style="min-width:48px">${dev.score}%</b><div class="meter sm"><span class="${scoreBg(dev.score)}" style="width:${dev.score}%"></span></div></div></td>
+        <td class="num" style="vertical-align:top">${dev.n_rules - dev.n_violations}/${dev.n_rules}</td>
+        <td>${vhtml}</td></tr>`;
+    }
+    html += '</tbody></table></div>';
+    body.innerHTML = html;
+  } catch (e) { body.innerHTML = `<div class="empty">Lỗi: ${esc(e)}</div>`; }
+}
+function closeScan() { document.getElementById('scanModal').classList.add('hidden'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeScan(); });
+
 function deltaClass(v) { return v > 0 ? 'score-high' : v < 0 ? 'score-low' : ''; }
 function deltaText(v) { return (v > 0 ? '+' : '') + Number(v).toFixed(1); }
 

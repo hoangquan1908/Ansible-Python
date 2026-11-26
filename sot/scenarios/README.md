@@ -2,7 +2,7 @@
 
 Ba tệp SoT ở thư mục này dùng để **chạy thử `score.py` ở các quy mô 3, 9 và 12 thiết bị** mà không cần dựng thêm thiết bị trong lab.
 
-Ansible, `run.sh` và dashboard **vẫn dùng `sot/devices.yaml`** (6 thiết bị). Các tệp ở đây chỉ được dùng qua tham số `--sot` của `score.py`.
+Ansible, `run.sh` và dashboard mặc định **vẫn dùng `sot/devices.yaml`** (6 thiết bị). Các tệp ở đây được dùng theo hai cách: chấm điểm trên cấu hình giả lập qua tham số `--sot` của `score.py`, hoặc **deploy thật trên lab** bằng `./run.sh scale-lab` (xem cuối tệp).
 
 ## Thành phần
 
@@ -55,3 +55,23 @@ Thay `devices_12.yaml` bằng `devices_3.yaml` hoặc `devices_9.yaml` để ch�
 | devices_12 | 12 | 54.3% | 100.0% | 82 → 0 | 326/600 |
 
 Ở cả ba quy mô, điểm từng thiết bị giữ nguyên. Ví dụ edge1 và edge2 đều ra 61.7% → 100%. Điều này cho thấy logic chấm không phụ thuộc vào số lượng thiết bị. Điểm tổng thay đổi theo tỉ lệ thiết bị FRR (18 luật) và SR Linux (15 luật) trong kịch bản, vì điểm tổng là trung bình có trọng số.
+
+## Deploy thật trên lab: `./run.sh scale-lab`
+
+`scripts/scale_lab.py` chạy lần lượt 3, 6, 9, 12 thiết bị. Với mỗi quy mô:
+
+1. Sinh topology Containerlab từ SoT (`lab/scale/topo_<n>.clab.yml`) và dựng lab.
+2. Sinh inventory từ chính SoT đó (`sot_to_inventory.py --sot ...`).
+3. Deploy lần 1, đếm phiên eBGP Established, deploy lần 2 (lũy đẳng).
+4. Backup và chấm điểm cấu hình thật trước harden; harden; backup và chấm điểm sau.
+5. Ghi RAM các container, xóa lab.
+
+Kết quả: `compliance/reports/scale_lab.md` (bảng tổng hợp và chi tiết từng thiết bị) và `scale_lab.json`. Script ghi lại sau mỗi quy mô, nên dừng giữa chừng vẫn giữ được số liệu đã đo. Khi xong, script khôi phục `inventory/hosts.yml` và dựng lại lab 6 thiết bị.
+
+```bash
+./run.sh scale-lab                 # cả 4 quy mô, khoảng 40–60 phút
+./run.sh scale-lab --only 3 6      # chỉ 3 và 6 thiết bị
+./run.sh scale-lab --topo-only     # chỉ sinh file topology để xem trước
+```
+
+Nếu RAM trống của máy ảo nhỏ hơn ước tính (mặc định 1500 MiB mỗi SR Linux, 150 MiB mỗi FRR), quy mô đó được bỏ qua và ghi lý do vào báo cáo. Dùng `--force` để vẫn chạy, hoặc `--mem-srl` để chỉnh ước tính sau khi xem cột RAM thực tế.
