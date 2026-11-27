@@ -38,7 +38,7 @@ rules:
     check_flat:
       srlinux:
         type: must_not_contain
-        pattern: '(?im)telnet'
+        pattern: '(?im)^/system/\S*telnet\S* = '
     remediation: "Xoa moi cau hinh telnet server; chi bat SSHv2."
     clo: [CLO2]
 
@@ -65,11 +65,12 @@ rules:
     check:
       type: must_not_contain
       pattern: '(?im)community\s+(public|private)\b'
-    # Mau rieng cho cau hinh SR Linux thu tu thiet bi (JSON da lam phang thanh dong /duong/dan = gia-tri)
+    # SR Linux luu community da ma hoa ($aes1$...) nen khong doc duoc gia tri; nhom truy cap SNMPv2
+    # khong xac thuc (no-auth-no-priv, mac dinh cua Containerlab) duoc tinh la vi pham
     check_flat:
       srlinux:
         type: must_not_contain
-        pattern: '(?im)communit[^=\n]*= "?(public|private)"?\s*$'
+        pattern: '(?im)(communit[^=\n]*= "?(public|private)"?\s*$|^/system/snmp/access-group\[[^\]]+\]/security-level = no-auth-no-priv)'
     remediation: "Xoa community public/private; chuyen sang SNMPv3."
     clo: [CLO2]
 
@@ -84,7 +85,7 @@ rules:
     check_flat:
       srlinux:
         type: must_contain
-        pattern: '(?im)/snmp/[^\n]*(auth-priv|usm)'
+        pattern: '(?im)^/system/snmp/[^\n]*security-level = auth-priv'
     remediation: "Cau hinh user SNMPv3 voi auth-priv (SHA/AES)."
     clo: [CLO2]
 
@@ -205,7 +206,7 @@ rules:
     check_flat:
       srlinux:
         type: must_contain
-        pattern: '(?im)(ssh-server|cli)[^\n]*/(timeout|idle-timeout) = [1-9]'
+        pattern: '(?im)^/system/(ssh-server|cli|aaa/authentication)(\[[^\]]*\])?/(timeout|idle-timeout) = ([1-9]\d?|[1-8]\d\d|900)\s*$'
     remediation: "Dat idle-timeout toi da 10 phut cho phien quan tri."
     clo: [CLO2]
 
@@ -220,7 +221,7 @@ rules:
     check_flat:
       srlinux:
         type: must_not_contain
-        pattern: '(?im)finger'
+        pattern: '(?im)^/system/\S*finger\S* = '
     remediation: "Tat dich vu finger (khong su dung)."
     clo: [CLO2]
 

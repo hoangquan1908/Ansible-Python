@@ -135,3 +135,50 @@ def test_score_hardened_srlinux_full():
     failed = [r["id"] for r in d["results"] if not r["passed"]]
     # SNMPv3 chua cau hinh trong lab nen chi CIS-2.2 con truot
     assert failed == ["CIS-2.2"]
+
+
+def _with(path_keys, value):
+    c = copy.deepcopy(HARDENED)
+    node = c[0]
+    for k in path_keys[:-1]:
+        node = node.setdefault(k, {})
+    node[path_keys[-1]] = value
+    return c
+
+
+def test_snmpv2_noauth_group_fails():
+    """Nhom SNMPv2 mac dinh cua Containerlab (community da ma hoa, no-auth-no-priv) bi tinh vi pham CIS-2.1."""
+    c = _with([SYS, "srl_nokia-snmp:snmp", "access-group"],
+              [{"name": "SNMPv2-RO-Community", "security-level": "no-auth-no-priv",
+                "community-entry": [{"name": "RO-Community", "community": "$aes1$GIA$MA"}]}])
+    assert evaluate_rule(RULES["CIS-2.1"], flat(c), "srlinux", "flat") is False
+    assert evaluate_rule(RULES["CIS-2.2"], flat(c), "srlinux", "flat") is False
+
+
+def test_aaa_idle_timeout_too_long_fails():
+    c = _with([SYS, "srl_nokia-aaa:aaa", "authentication", "idle-timeout"], 7200)
+    del c[0][SYS]["srl_nokia-ssh:ssh-server"]["timeout"]
+    assert evaluate_rule(RULES["CIS-8.1"], flat(c), "srlinux", "flat") is False
+    c[0][SYS]["srl_nokia-aaa:aaa"]["authentication"]["idle-timeout"] = 600
+    assert evaluate_rule(RULES["CIS-8.1"], flat(c), "srlinux", "flat") is True
+
+
+def test_telnet_in_acl_description_not_violation():
+    c = copy.deepcopy(HARDENED)
+    c[0]["srl_nokia-acl:acl"]["acl-filter"][0]["entry"][0]["description"] = "Accept incoming Telnet replies"
+    assert evaluate_rule(RULES["CIS-1.1"], flat(c), "srlinux", "flat") is True
+
+
+def test_ssh_server_list_form():
+    """Ban SR Linux moi: ssh-server la danh sach co khoa name."""
+    c = copy.deepcopy(HARDENED)
+    c[0][SYS]["srl_nokia-ssh:ssh-server"] = [{"name": "mgmt", "admin-state": "enable", "timeout": 300}]
+    t = flat(c)
+    assert "/system/ssh-server[name=mgmt]/admin-state = enable" in t
+    assert evaluate_rule(RULES["CIS-1.2"], t, "srlinux", "flat") is True
+    assert evaluate_rule(RULES["CIS-8.1"], t, "srlinux", "flat") is True
+
+
+def test_mask_keyed_path():
+    t = "/system/snmp/access-group[name=A]/community-entry[name=B]/community = $aes1$X\n/system/tls/profile[name=p]/key = $aes1$Y"
+    assert "$aes1$" not in mask_secrets(t)

@@ -56,18 +56,19 @@ profiles:
 
   K5:
     title: "Đã bảo mật một phần bằng tay"
-    desc: "FRR: bật mã hóa mật khẩu, banner motd, exec-timeout; SR Linux: tắt JSON-RPC HTTP (giữ HTTPS), đặt timeout SSH"
+    desc: "FRR: bật mã hóa mật khẩu, banner motd, exec-timeout; SR Linux: tắt JSON-RPC HTTP (giữ HTTPS), xóa nhóm SNMPv2 mặc định, đặt idle-timeout 600 s"
     frr:
       - "service password-encryption"
       - "banner motd line CANH BAO: he thong noi bo - cam truy cap trai phep"
       - "line vty"
       - "exec-timeout 5 0"
-    srl_delete: []
+    srl_delete:
+      - "/system/snmp/access-group[name=SNMPv2-RO-Community]"
     srl_update:
       - path: "/system/json-rpc-server/network-instance[name=mgmt]/http"
         value: {admin-state: disable}
-      - path: "/system/ssh-server"
-        value: {timeout: 300}
+      - path: "/system/aaa/authentication"
+        value: {idle-timeout: 600}
 
   K6:
     title: "Trôi cấu hình sau harden"
@@ -80,6 +81,6 @@ profiles:
       - "no exec-timeout"
     srl_delete:
       - "/acl/acl-filter[name=mgmt-acl][type=ipv4]"
-      - "/system/ssh-server/timeout"
+      - "/system/ssh-server[name=mgmt]/timeout"
       - "/system/banner/login-banner"
     srl_update: []

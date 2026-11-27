@@ -75,8 +75,8 @@ def flatten_json(node, prefix=""):
 
 
 def mask_secrets(text: str) -> str:
-    """Che gia tri cua cac la password/secret/key khi in ra man hinh."""
-    return re.sub(r"(?im)^([^\n=]*(password|secret|community|key)[^\n=]*= ).*$", r"\1***", text)
+    """Che gia tri cua la cuoi co ten password/secret/community/key khi in ra man hinh."""
+    return re.sub(r"(?im)^(\S*/[^/\s=]*(password|secret|community|key)[^/\s=]* = ).*$", r"\1***", text)
 
 
 def normalize_config(text: str) -> tuple[str, str]:
