@@ -15,6 +15,9 @@
 #   applies_to  : all | srlinux | frr   (loc theo os cua thiet bi)
 #   remediation : cach khac phuc (dua vao bao cao cho nguoi van hanh)
 #   clo         : anh xa chuan dau ra hoc phan (phuc vu cham DATN)
+#   check_flat  : (tuy chon) mau rieng theo os, chi dung khi cau hinh thu tu
+#                 thiet bi la JSON (SR Linux) va da duoc lam phang thanh dong
+#                 '/duong/dan = gia-tri'. Cau hinh dang CLI van dung 'check'.
 # =====================================================================
 
 weights:
@@ -31,6 +34,11 @@ rules:
     check:
       type: must_not_contain
       pattern: '(?im)^\s*(telnet\s+server|service\s+telnet|transport\s+input\s+telnet)'
+    # Mau rieng cho cau hinh SR Linux thu tu thiet bi (JSON da lam phang thanh dong /duong/dan = gia-tri)
+    check_flat:
+      srlinux:
+        type: must_not_contain
+        pattern: '(?im)telnet'
     remediation: "Xoa moi cau hinh telnet server; chi bat SSHv2."
     clo: [CLO2]
 
@@ -41,6 +49,11 @@ rules:
     check:
       type: must_contain
       pattern: '(?im)^\s*(ssh\s+server|admin-state\s+enable.*ssh|ssh version 2|transport input ssh)'
+    # Mau rieng cho cau hinh SR Linux thu tu thiet bi (JSON da lam phang thanh dong /duong/dan = gia-tri)
+    check_flat:
+      srlinux:
+        type: must_contain
+        pattern: '(?im)/ssh-server[^\n]*/admin-state = enable'
     remediation: "Bat dich vu SSH va ep dung SSHv2."
     clo: [CLO2]
 
@@ -52,6 +65,11 @@ rules:
     check:
       type: must_not_contain
       pattern: '(?im)community\s+(public|private)\b'
+    # Mau rieng cho cau hinh SR Linux thu tu thiet bi (JSON da lam phang thanh dong /duong/dan = gia-tri)
+    check_flat:
+      srlinux:
+        type: must_not_contain
+        pattern: '(?im)communit[^=\n]*= "?(public|private)"?\s*$'
     remediation: "Xoa community public/private; chuyen sang SNMPv3."
     clo: [CLO2]
 
@@ -62,6 +80,11 @@ rules:
     check:
       type: must_contain
       pattern: '(?im)(snmp.*v3|usm.*auth.*priv|security-level\s+auth-priv)'
+    # Mau rieng cho cau hinh SR Linux thu tu thiet bi (JSON da lam phang thanh dong /duong/dan = gia-tri)
+    check_flat:
+      srlinux:
+        type: must_contain
+        pattern: '(?im)/snmp/[^\n]*(auth-priv|usm)'
     remediation: "Cau hinh user SNMPv3 voi auth-priv (SHA/AES)."
     clo: [CLO2]
 
@@ -73,6 +96,11 @@ rules:
     check:
       type: must_contain
       pattern: '(?im)(banner|login-banner|message-of-the-day|motd)'
+    # Mau rieng cho cau hinh SR Linux thu tu thiet bi (JSON da lam phang thanh dong /duong/dan = gia-tri)
+    check_flat:
+      srlinux:
+        type: must_contain
+        pattern: '(?im)/system/banner/(login-banner|motd-banner) = \S'
     remediation: "Them banner canh bao truy cap trai phep."
     clo: [CLO2]
 
@@ -84,6 +112,11 @@ rules:
     check:
       type: must_contain
       pattern: '(?im)(logging|log.*server|remote-server|syslog)'
+    # Mau rieng cho cau hinh SR Linux thu tu thiet bi (JSON da lam phang thanh dong /duong/dan = gia-tri)
+    check_flat:
+      srlinux:
+        type: must_contain
+        pattern: '(?im)/system/logging/remote-server\[host='
     remediation: "Cau hinh gui log ve may chu syslog tap trung."
     clo: [CLO2, CLO3]
 
@@ -94,6 +127,11 @@ rules:
     check:
       type: must_contain
       pattern: '(?im)(ntp|network-time)'
+    # Mau rieng cho cau hinh SR Linux thu tu thiet bi (JSON da lam phang thanh dong /duong/dan = gia-tri)
+    check_flat:
+      srlinux:
+        type: must_contain
+        pattern: '(?im)/system/ntp/server\[address='
     remediation: "Cau hinh it nhat mot may chu NTP tin cay."
     clo: [CLO2]
 
@@ -104,7 +142,7 @@ rules:
     applies_to: frr
     check:
       type: must_contain
-      pattern: '(?im)(password|authentication|md5|neighbor .* password)'
+      pattern: '(?im)^\s*(neighbor\s+\S+\s+password\s+\S+|ip\s+ospf\s+(message-digest-key|authentication))'
     remediation: "Bat xac thuc cho phien dinh tuyen (MD5/keychain)."
     clo: [CLO2]
 
@@ -116,6 +154,11 @@ rules:
     check:
       type: must_contain
       pattern: '(?im)(access-list|acl|ip access|match .* prefix)'
+    # Mau rieng cho cau hinh SR Linux thu tu thiet bi (JSON da lam phang thanh dong /duong/dan = gia-tri)
+    check_flat:
+      srlinux:
+        type: must_contain
+        pattern: '(?im)/acl/(acl-filter|ipv4-filter)\[name=(?!cpm\])[^\]]+\]'
     remediation: "Chi cho phep dai quan tri 172.20.20.0/24 truy cap."
     clo: [CLO2]
 
@@ -127,6 +170,11 @@ rules:
     check:
       type: must_not_contain
       pattern: '(?im)^\s*ip\s+http\s+server'
+    # Mau rieng cho cau hinh SR Linux thu tu thiet bi (JSON da lam phang thanh dong /duong/dan = gia-tri)
+    check_flat:
+      srlinux:
+        type: must_not_contain
+        pattern: '(?im)/json-rpc-server/network-instance\[name=[^\]]+\]/http/admin-state = enable'
     remediation: "Tat dich vu HTTP, chi dung HTTPS cho quan tri web."
     clo: [CLO2]
 
@@ -137,6 +185,11 @@ rules:
     check:
       type: must_contain
       pattern: '(?im)(service\s+password-encryption|password.*encrypted|hashed-password)'
+    # Mau rieng cho cau hinh SR Linux thu tu thiet bi (JSON da lam phang thanh dong /duong/dan = gia-tri)
+    check_flat:
+      srlinux:
+        type: must_contain
+        pattern: '(?im)password = "?\$(y|6|5|1|2[aby]?)\$'
     remediation: "Bat service password-encryption hoac dung secret."
     clo: [CLO2]
 
@@ -148,6 +201,11 @@ rules:
     check:
       type: must_contain
       pattern: '(?im)(exec-timeout|idle-timeout|session.*timeout)'
+    # Mau rieng cho cau hinh SR Linux thu tu thiet bi (JSON da lam phang thanh dong /duong/dan = gia-tri)
+    check_flat:
+      srlinux:
+        type: must_contain
+        pattern: '(?im)(ssh-server|cli)[^\n]*/(timeout|idle-timeout) = [1-9]'
     remediation: "Dat idle-timeout toi da 10 phut cho phien quan tri."
     clo: [CLO2]
 
@@ -158,6 +216,11 @@ rules:
     check:
       type: must_not_contain
       pattern: '(?im)^\s*(service\s+finger|ip\s+finger)'
+    # Mau rieng cho cau hinh SR Linux thu tu thiet bi (JSON da lam phang thanh dong /duong/dan = gia-tri)
+    check_flat:
+      srlinux:
+        type: must_not_contain
+        pattern: '(?im)finger'
     remediation: "Tat dich vu finger (khong su dung)."
     clo: [CLO2]
 
@@ -179,6 +242,11 @@ rules:
     check:
       type: must_contain
       pattern: '(?im)(logging\s+buffer|log\s+file|log.*local|buffer-size)'
+    # Mau rieng cho cau hinh SR Linux thu tu thiet bi (JSON da lam phang thanh dong /duong/dan = gia-tri)
+    check_flat:
+      srlinux:
+        type: must_contain
+        pattern: '(?im)/system/logging/(file|buffer)\['
     remediation: "Bat logging buffer/file de luu nhat ky noi bo."
     clo: [CLO2, CLO3]
 
@@ -190,6 +258,11 @@ rules:
     check:
       type: must_not_contain
       pattern: '(?im)^\s*password\s+(admin|cisco|default|1234|password|test)\s*$'
+    # Mau rieng cho cau hinh SR Linux thu tu thiet bi (JSON da lam phang thanh dong /duong/dan = gia-tri)
+    check_flat:
+      srlinux:
+        type: must_not_contain
+        pattern: '(?im)password = "?(admin|cisco|default|1234|password|test)"?\s*$'
     remediation: "Dung mat khau manh, khong de plaintext trong cau hinh."
     clo: [CLO2]
 
@@ -211,5 +284,10 @@ rules:
     check:
       type: must_contain
       pattern: '(?im)(hostname|host-name)\s+\S+'
+    # Mau rieng cho cau hinh SR Linux thu tu thiet bi (JSON da lam phang thanh dong /duong/dan = gia-tri)
+    check_flat:
+      srlinux:
+        type: must_contain
+        pattern: '(?im)/system/name/host-name = \S+'
     remediation: "Dat hostname theo quy uoc dat ten cua to chuc."
     clo: [CLO1]

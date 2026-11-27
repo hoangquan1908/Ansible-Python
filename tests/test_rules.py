@@ -57,19 +57,17 @@ CASES = [
     ("R42", "CIS-11.1", "hostname edge1", True),
     ("R43", "CIS-11.1", "system {\n    host-name spine1\n}", True),
     ("R44", "CIS-11.1", "interface eth1\n ip address 10.0.1.1/30", False),
+    # Da sua mau CIS-5.1: chi tinh mat khau gan voi phien dinh tuyen
+    ("R49", "CIS-5.1", "username admin password admin", False),
+    ("R52", "CIS-5.1", "service password-encryption", False),
 ]
 
 KNOWN_ISSUES = [
     # Dat gia: regex 'log.*local' cua CIS-9.2 khop dong 'login local'
     ("R45", "CIS-9.2", "line vty\n login local", False, "CIS-9.2 khop nham 'login local' (dat gia)"),
-    # Truot oan: cau hinh SR Linux thu ve dang JSON, regex viet cho dang CLI
-    ("R46", "CIS-1.2", '"ssh-server": [{"name": "mgmt", "admin-state": "enable"}]', True,
-     "CIS-1.2 khong nhan dang khoa JSON \"ssh-server\" (truot oan)"),
-    ("R47", "CIS-11.1", '"host-name": "spine1"', True,
-     "CIS-11.1 khong nhan dang khoa JSON \"host-name\" (truot oan)"),
+    # R46, R47 (SR Linux JSON truot oan) da khac phuc bang lam phang JSON: xem test_flatten.py
     # Dat gia: regex khong xet phu dinh / gia tri / ranh gioi tu
     ("R48", "CIS-3.1", "no banner motd", False, "CIS-3.1 khong xet phu dinh 'no banner' (dat gia)"),
-    ("R49", "CIS-5.1", "username admin password admin", False, "CIS-5.1 khop moi chu 'password' (dat gia)"),
     ("R50", "CIS-6.1", "database oracle", False, "CIS-6.1 khop chuoi con 'acl' trong 'oracle' (dat gia)"),
     ("R51", "CIS-8.1", "line vty\n exec-timeout 0 0", False, "CIS-8.1 khong kiem tra gia tri 0 0 (dat gia)"),
 ]

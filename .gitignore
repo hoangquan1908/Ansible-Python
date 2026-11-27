@@ -43,3 +43,7 @@ backups/*.json
 # Anh chup cau hinh that cua scale_lab.py (co the chua mat khau) va thu muc lab sinh ra
 compliance/configs/scale_live/
 lab/scale/clab-*/
+
+# Ket qua cua profile_lab.py: cau hinh that va log Ansible (khong commit)
+compliance/configs/profile_live/
+compliance/reports/profile_logs/

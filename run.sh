@@ -129,6 +129,12 @@ sys.exit(r.returncode)
     python3 scripts/scale_lab.py "$@"
     ;;
 
+  profile-lab)
+    banner "KIEM THU THEO KICH BAN CAU HINH TREN LAB 6 THIET BI (xoa va dung lai lab nhieu lan!)"
+    shift || true
+    python3 scripts/profile_lab.py "$@"
+    ;;
+
   lab-test)
     banner "CA KIEM THU TREN LAB (thay doi cau hinh lab!)"
     python3 scripts/lab_tests.py
@@ -185,9 +191,10 @@ sys.exit(r.returncode)
     echo "  score      Cham diem tuan thu (golden|after|live|compare)"
     echo "  benchmark  Do hieu qua van hanh (tu dong vs thu cong)"
     echo "  risk       Danh gia rui ro & MTTR"
-    echo "  test       Chay 93 ca kiem thu tu dong (pytest)"
+    echo "  test       Chay 117 ca kiem thu tu dong (pytest)"
     echo "  lab-test   Chay 11 ca kiem thu tren lab, ghi compliance/reports/lab_tests.md"
     echo "  scale-lab  Deploy that 3/6/9/12 thiet bi, ghi compliance/reports/scale_lab.md"
+    echo "  profile-lab 6 kich ban cau hinh tren 6 thiet bi, ghi compliance/reports/profile_lab.md"
     echo "  dashboard  Khoi dong web dashboard (port 5000)"
     echo "  demo       Chay demo toan bo he thong"
     echo ""

@@ -1,0 +1,37 @@
+---
+# Dua thay doi cua mot kich ban vao thiet bi (goi boi scripts/profile_lab.py)
+# Bien vao (-e @tep.json): frr_cmds, srl_delete, srl_update
+# Moi thay doi la mot task rieng va ignore_errors de mot duong dan khong ton tai
+# khong chan cac thay doi con lai; so task loi duoc ghi nhan o cot "ignored".
+
+- name: "[inject] FRR"
+  hosts: frr
+  gather_facts: false
+  tasks:
+    - name: "[inject/frr] Chay lenh vtysh"
+      ansible.builtin.shell: >-
+        vtysh -c "configure terminal"
+        {% for c in frr_cmds %} -c {{ c | quote }}{% endfor %}
+      when: frr_cmds | length > 0
+      register: inj
+      changed_when: true
+      ignore_errors: true
+
+- name: "[inject] SR Linux"
+  hosts: srlinux
+  gather_facts: false
+  tasks:
+    - name: "[inject/srl] Xoa duong dan"
+      nokia.srlinux.config:
+        delete:
+          - path: "{{ item }}"
+      loop: "{{ srl_delete }}"
+      ignore_errors: true
+
+    - name: "[inject/srl] Ghi gia tri"
+      nokia.srlinux.config:
+        update:
+          - path: "{{ item.path }}"
+            value: "{{ item.value }}"
+      loop: "{{ srl_update }}"
+      ignore_errors: true

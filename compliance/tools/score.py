@@ -46,11 +46,61 @@ def strip_comments(text: str) -> str:
     return "\n".join(lines)
 
 
+# Ten truong thuong la khoa cua danh sach YANG tren SR Linux
+LIST_KEYS = ("name", "address", "host", "index", "id", "type", "prefix", "user")
+
+
+def flatten_json(node, prefix=""):
+    """Lam phang cay JSON (cau hinh SR Linux thu qua JSON-RPC) thanh cac dong
+    '/duong/dan[khoa=gia-tri]/la = gia-tri' de bo luat kiem tra theo dong.
+    Tien to module YANG (vd 'srl_nokia-system:') duoc bo di cho gon."""
+    if isinstance(node, dict):
+        for k, v in node.items():
+            key = k.split(":", 1)[1] if ":" in k else k
+            if isinstance(v, list) and v and all(isinstance(x, dict) for x in v):
+                for item in v:
+                    keys = [(kk, vv) for kk, vv in item.items()
+                            if (kk in LIST_KEYS or kk.endswith(("-name", "-id")))
+                            and not isinstance(vv, (dict, list))]
+                    sel = "".join(f"[{kk}={vv}]" for kk, vv in keys)
+                    yield from flatten_json(item, f"{prefix}/{key}{sel}")
+            else:
+                yield from flatten_json(v, f"{prefix}/{key}")
+    elif isinstance(node, list):
+        for i, v in enumerate(node):
+            yield from flatten_json(v, prefix if len(node) == 1 else f"{prefix}[{i}]")
+    else:
+        val = "true" if node is True else "false" if node is False else node
+        yield f"{prefix or '/'} = " + str(val).replace("\n", "\\n")
+
+
+def mask_secrets(text: str) -> str:
+    """Che gia tri cua cac la password/secret/key khi in ra man hinh."""
+    return re.sub(r"(?im)^([^\n=]*(password|secret|community|key)[^\n=]*= ).*$", r"\1***", text)
+
+
+def normalize_config(text: str) -> tuple[str, str]:
+    """Tra ve (van ban de cham, dinh dang). Cau hinh JSON -> 'flat', con lai -> 'cli'."""
+    t = text.lstrip()
+    if t[:1] in "[{":
+        try:
+            return "\n".join(flatten_json(json.loads(t))), "flat"
+        except ValueError:
+            pass
+    return strip_comments(text), "cli"
+
+
 def read_config(configs_dir: Path, name: str) -> str | None:
+    """Doc cau hinh dang van ban (giu tuong thich cu)."""
+    r = read_config_fmt(configs_dir, name)
+    return r[0] if r else None
+
+
+def read_config_fmt(configs_dir: Path, name: str):
     p = configs_dir / f"{name}.cfg"
     if not p.exists():
         return None
-    return strip_comments(p.read_text(encoding="utf-8"))
+    return normalize_config(p.read_text(encoding="utf-8"))
 
 
 # ----------------------------------------------------------------- danh gia
@@ -59,8 +109,17 @@ def rule_applies(rule: dict, os_name: str) -> bool:
     return scope == "all" or scope == os_name
 
 
-def evaluate_rule(rule: dict, config_text: str) -> bool:
-    chk = rule["check"]
+def pick_check(rule: dict, os_name: str | None = None, fmt: str = "cli") -> dict:
+    """Cau hinh da lam phang (SR Linux JSON) dung mau rieng check_flat.<os> neu co."""
+    if fmt == "flat":
+        alt = (rule.get("check_flat") or {}).get(os_name)
+        if alt:
+            return alt
+    return rule["check"]
+
+
+def evaluate_rule(rule: dict, config_text: str, os_name: str | None = None, fmt: str = "cli") -> bool:
+    chk = pick_check(rule, os_name, fmt)
     pattern = chk["pattern"]
     found = re.search(pattern, config_text) is not None
     if chk["type"] == "must_contain":
@@ -70,7 +129,7 @@ def evaluate_rule(rule: dict, config_text: str) -> bool:
     raise ValueError(f"Kieu kiem tra khong ho tro: {chk['type']}")
 
 
-def score_device(device: dict, policy: dict, config_text: str) -> dict:
+def score_device(device: dict, policy: dict, config_text: str, fmt: str = "cli") -> dict:
     weights = policy["weights"]
     results, earned, total = [], 0, 0
     for rule in policy["rules"]:
@@ -78,7 +137,7 @@ def score_device(device: dict, policy: dict, config_text: str) -> dict:
             continue
         w = weights[rule["severity"]]
         total += w
-        passed = evaluate_rule(rule, config_text)
+        passed = evaluate_rule(rule, config_text, device["os"], fmt)
         if passed:
             earned += w
         results.append({
@@ -100,6 +159,7 @@ def score_device(device: dict, policy: dict, config_text: str) -> dict:
         "total": total,
         "n_rules": len(results),
         "n_violations": len(violations),
+        "format": fmt,
         "results": results,
     }
 
@@ -240,11 +300,11 @@ def run_scoring(sot_path, policy_path, configs_dir) -> dict:
 
     devices_out, tot_earned, tot_total = [], 0, 0
     for device in sot["devices"]:
-        cfg = read_config(configs_dir, device["name"])
-        if cfg is None:
+        r = read_config_fmt(configs_dir, device["name"])
+        if r is None:
             print(f"[!] Bo qua {device['name']}: chua co {configs_dir}/{device['name']}.cfg")
             continue
-        d = score_device(device, policy, cfg)
+        d = score_device(device, policy, r[0], r[1])
         devices_out.append(d)
         tot_earned += d["earned"]
         tot_total += d["total"]
@@ -269,7 +329,15 @@ def main():
     ap.add_argument("--compare", nargs=2, metavar=("BEFORE", "AFTER"),
                     help="Doi chung 2 thu muc config (vd: configs/golden configs/live)")
     ap.add_argument("--out", default=str(ROOT / "reports"))
+    ap.add_argument("--flat", metavar="TEP_CFG",
+                    help="In cau hinh da lam phang cua mot tep (de kiem tra mau luat SR Linux)")
     args = ap.parse_args()
+
+    if args.flat:
+        text, fmt = normalize_config(Path(args.flat).read_text(encoding="utf-8"))
+        print(f"# dinh dang: {fmt}")
+        print(mask_secrets(text))
+        return
 
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
