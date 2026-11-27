@@ -20,6 +20,8 @@ Chay (o thu muc goc repo, may ao co Containerlab):
     python3 scripts/profile_lab.py                  # ca 6 kich ban (K2 lap 3 lan) ~40 phut
     python3 scripts/profile_lab.py --only K1 K2     # chi chay mot so kich ban
     python3 scripts/profile_lab.py --repeat 1       # moi kich ban chi chay 1 lan
+    python3 scripts/profile_lab.py --rescore        # KHONG dung lab: cham lai cau hinh da luu
+                                                    # bang bo luat hien tai, ghi lai bao cao
 Ket qua: compliance/reports/profile_lab.md va profile_lab.json
 """
 import argparse
@@ -50,6 +52,14 @@ REPORTS = REPO / "compliance/reports"
 PROFILES = REPO / "lab/profiles/profiles.yml"
 INJECT = REPO / "lab/profiles/inject.yml"
 SOT = "sot/devices.yaml"
+
+
+JSON_SECRET = re.compile(r'\b(password|secret|key|community)(\s+\d)?\s+[^\s",\\]+', re.I)
+
+
+def mask_json(s):
+    """Che mat khau trong chuoi JSON ma khong lam hong dau ngoac kep / dau phay."""
+    return JSON_SECRET.sub(lambda m: f"{m.group(1)}{m.group(2) or ''} ****", s)
 
 
 # ------------------------------------------------------------------ ansible co ghi log
@@ -102,6 +112,15 @@ def snapshot_and_score(tag, sot_path):
     dst.mkdir(parents=True)
     for f in LIVE.glob("*.cfg"):
         shutil.copy(f, dst / f.name)
+    s = score_saved(tag, sot_path)
+    s["backup_rc"] = b["returncode"]
+    return s
+
+
+def score_saved(tag, sot_path=SOT):
+    """Cham diem thu muc profile_live/<tag> da co san."""
+    dst = SNAP / tag
+    LOGS.mkdir(parents=True, exist_ok=True)
     rep = run_scoring(REPO / sot_path, POLICY, dst)
     # luu ban lam phang (da che mat khau) cua mot thiet bi SR Linux de doi chieu mau luat
     for d in rep["devices"]:
@@ -112,8 +131,7 @@ def snapshot_and_score(tag, sot_path):
             break
     s = {"overall": rep["overall_score"], "by_os": per_os(rep), "failed": failed_rules(rep),
          "per_device": {d["device"]: d["score"] for d in rep["devices"]},
-         "formats": sorted({d["format"] for d in rep["devices"]}), "backup_rc": b["returncode"],
-         "n_devices": len(rep["devices"])}
+         "formats": sorted({d["format"] for d in rep["devices"]}), "n_devices": len(rep["devices"])}
     return s
 
 
@@ -191,8 +209,9 @@ def v(x, suf=""):
 
 def write_report(results):
     REPORTS.mkdir(parents=True, exist_ok=True)
-    (REPORTS / "profile_lab.json").write_text(mask(json.dumps(results, ensure_ascii=False, indent=2)), encoding="utf-8")
-    L = [f"# Kiem thu theo kich ban cau hinh tren lab 6 thiet bi — {results['run_at']}", "",
+    (REPORTS / "profile_lab.json").write_text(mask_json(json.dumps(results, ensure_ascii=False, indent=2)), encoding="utf-8")
+    L = [f"# Kiem thu theo kich ban cau hinh tren lab 6 thiet bi — {results['run_at']}"
+         + (f" (cham lai {results['rescored_at']})" if results.get("rescored_at") else ""), "",
          f"Bo luat: {results['policy']} ; SoT: {SOT}", "",
          "| Mã | Kịch bản | Lần | Thay đổi đưa vào (FRR / SRL) | Điểm trước | FRR trước | SRL trước | Điểm sau "
          "| FRR sau | SRL sau | Luật còn trượt sau harden | Harden | eBGP cuối | Ghi chú |",
@@ -236,6 +255,29 @@ def write_report(results):
     log(f"Da ghi {REPORTS / 'profile_lab.md'} va profile_lab.json")
 
 
+def rescore():
+    """Cham lai cac cau hinh da luu trong profile_live bang bo luat hien tai (khong dung lab)."""
+    src = REPORTS / "profile_lab.json"
+    if not src.exists():
+        sys.exit(f"Chua co {src} — can chay profile_lab.py it nhat mot lan")
+    raw = src.read_text(encoding="utf-8")
+    try:
+        results = json.loads(raw)
+    except ValueError:
+        # ban cu che mat khau lam mat dau '",' sau chuoi lenh FRR -> va lai roi doc
+        results = json.loads(re.sub(r'(?m)^(\s*"[^"\n]*\*\*\*\*)\s*$', r'\1",', raw))
+    profiles = yaml.safe_load(PROFILES.read_text(encoding="utf-8"))["profiles"]
+    results["profiles"] = {k: profiles[k] for k in results.get("profiles", profiles) if k in profiles}
+    for r in results["runs"]:
+        tag = f"{r['key']}_{r['run']}"
+        for field, sub in (("before", "_truoc"), ("after", "_sau"), ("score_hardened", "_dahard")):
+            if (SNAP / (tag + sub)).is_dir():
+                r[field] = score_saved(tag + sub)
+        log(f"{tag}: {v((r.get('before') or {}).get('overall'), '%')} -> {v((r.get('after') or {}).get('overall'), '%')}")
+    results["rescored_at"] = dt.datetime.now().isoformat(timespec="seconds")
+    write_report(results)
+
+
 def main():
     profiles = yaml.safe_load(PROFILES.read_text(encoding="utf-8"))["profiles"]
     ap = argparse.ArgumentParser(description="Kiem thu theo kich ban cau hinh tren lab 6 thiet bi.")
@@ -243,7 +285,12 @@ def main():
     ap.add_argument("--repeat", type=int, help="ghi de so lan lap cua moi kich ban")
     ap.add_argument("--no-restore", action="store_true", help="khong dung lai lab 6 thiet bi khi xong")
     ap.add_argument("--bgp-wait", type=int, default=45, help="giay cho BGP len sau deploy")
+    ap.add_argument("--rescore", action="store_true",
+                    help="khong dung lab, chi cham lai cau hinh da luu bang bo luat hien tai")
     args = ap.parse_args()
+    if args.rescore:
+        rescore()
+        return
     keys = args.only or list(profiles)
 
     if subprocess.run(["sudo", "-v"]).returncode != 0:
